@@ -1,5 +1,25 @@
 # @happyvertical/spider
 
+## 0.60.3
+
+### Patch Changes
+
+- ### Features
+
+  - add auto-changeset and direct publish workflow (ci)
+  - graduate @happyvertical/spider to standalone repository
+
+  ### Bug Fixes
+
+  - remove explicit path from biome lint script (release)
+  - add workflow_dispatch trigger to publish workflow (release)
+  - use GH_TOKEN org secret for npm publish (release)
+  - include root package in pnpm workspace for changesets (release)
+  - remove useParseIntRadix rule (biome 2.x only) (spider)
+  - align biome.json with biome 1.9.4 (include, schema) (spider)
+  - remove pnpm version conflict with packageManager (deps)
+  - add packages:read permission for GitHub Packages auth (deps)
+
 ## 0.60.2
 
 ### Patch Changes
