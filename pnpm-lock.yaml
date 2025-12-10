@@ -30,8 +30,8 @@ importers:
         specifier: ^20.0.10
         version: 20.0.11
       jsdom:
-        specifier: 27.1.0
-        version: 27.1.0(postcss@8.5.6)
+        specifier: 27.3.0
+        version: 27.3.0(postcss@8.5.6)
       playwright:
         specifier: ^1.56.1
         version: 1.57.0
@@ -71,7 +71,7 @@ importers:
         version: 4.5.4(@types/node@24.10.0)(rollup@4.53.3)(typescript@5.9.3)(vite@7.2.7(@types/node@24.10.0)(jiti@2.6.1)(tsx@4.21.0))
       vitest:
         specifier: ^4.0.8
-        version: 4.0.15(@types/node@24.10.0)(happy-dom@20.0.11)(jiti@2.6.1)(jsdom@27.1.0(postcss@8.5.6))(tsx@4.21.0)
+        version: 4.0.15(@types/node@24.10.0)(happy-dom@20.0.11)(jiti@2.6.1)(jsdom@27.3.0(postcss@8.5.6))(tsx@4.21.0)
 
 packages:
 
@@ -2341,8 +2341,8 @@ packages:
       canvas:
         optional: true
 
-  jsdom@27.1.0:
-    resolution: {integrity: sha512-Pcfm3eZ+eO4JdZCXthW9tCDT3nF4K+9dmeZ+5X39n+Kqz0DDIABRP5CAEOHRFZk8RGuC2efksTJxrjp8EXCunQ==}
+  jsdom@27.3.0:
+    resolution: {integrity: sha512-GtldT42B8+jefDUC4yUKAvsaOrH7PDHmZxZXNgF2xMmymjUbRYJvpAybZAKEmXDGTM0mCsz8duOa4vTm5AY2Kg==}
     engines: {node: ^20.19.0 || ^22.12.0 || >=24.0.0}
     peerDependencies:
       canvas: ^3.0.0
@@ -6352,7 +6352,7 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  jsdom@27.1.0(postcss@8.5.6):
+  jsdom@27.3.0(postcss@8.5.6):
     dependencies:
       '@acemir/cssom': 0.9.28
       '@asamuzakjp/dom-selector': 6.7.6
@@ -7146,7 +7146,7 @@ snapshots:
       jiti: 2.6.1
       tsx: 4.21.0
 
-  vitest@4.0.15(@types/node@24.10.0)(happy-dom@20.0.11)(jiti@2.6.1)(jsdom@27.1.0(postcss@8.5.6))(tsx@4.21.0):
+  vitest@4.0.15(@types/node@24.10.0)(happy-dom@20.0.11)(jiti@2.6.1)(jsdom@27.3.0(postcss@8.5.6))(tsx@4.21.0):
     dependencies:
       '@vitest/expect': 4.0.15
       '@vitest/mocker': 4.0.15(vite@7.2.7(@types/node@24.10.0)(jiti@2.6.1)(tsx@4.21.0))
@@ -7171,7 +7171,7 @@ snapshots:
     optionalDependencies:
       '@types/node': 24.10.0
       happy-dom: 20.0.11
-      jsdom: 27.1.0(postcss@8.5.6)
+      jsdom: 27.3.0(postcss@8.5.6)
     transitivePeerDependencies:
       - jiti
       - less
