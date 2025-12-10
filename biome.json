@@ -128,10 +128,7 @@
       }
     },
     {
-      "include": [
-        "**/messages.ts",
-        "**/messages/**/*.ts"
-      ],
+      "include": ["**/messages.ts", "**/messages/**/*.ts"],
       "linter": {
         "rules": {
           "style": {
