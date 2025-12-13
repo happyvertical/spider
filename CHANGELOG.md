@@ -1,5 +1,13 @@
 # @happyvertical/spider
 
+## 0.60.4
+
+### Patch Changes
+
+- ### Bug Fixes
+
+  - improve jQuery file tree compatibility (tree)
+
 ## 0.60.3
 
 ### Patch Changes
