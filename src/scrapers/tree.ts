@@ -45,16 +45,23 @@ export class TreeScraper implements Scraper {
   private cache?: CacheAdapter;
 
   // Default tree/expandable element selectors
+  // Ordered from most specific (tree structures) to most generic (buttons)
+  // This prioritizes file/directory trees over navigation menus
   private readonly DEFAULT_SELECTORS = [
-    '[role="button"][aria-expanded]',
-    'button[aria-expanded]',
+    // Specific tree/directory structures (highest priority)
+    'li.directory.collapsed > a', // jqueryFileTree and similar
+    'li.collapsed > a', // Generic collapsed list items
+    'details summary', // HTML5 details/summary
+
+    // Accordion-specific triggers
     '[data-accordion-trigger]',
     '[data-toggle="collapse"]',
     '.accordion-button',
     '.expand-button',
-    'details summary',
-    'li.directory.collapsed > a', // Directory/file browser trees
-    'li.collapsed > a', // Generic collapsed list items
+
+    // Generic expandable buttons (lowest priority - often nav menus)
+    '[role="button"][aria-expanded]',
+    'button[aria-expanded]',
   ];
 
   constructor(options: TreeScraperOptions) {
@@ -212,22 +219,26 @@ export class TreeScraper implements Scraper {
             continue;
           }
 
-          // Click the element using Playwright's native click (properly triggers JS events)
+          // Click using jQuery if available (for jqueryFileTree), otherwise native DOM click
+          // Playwright's element.click() dispatches synthetic events that don't trigger jQuery handlers
           try {
-            await element.click();
+            // Use jQuery click if available, otherwise fall back to native click
+            // jqueryFileTree specifically requires jQuery's event system
+            await element.evaluate((el: Element) => {
+              const win = window as any;
+              if (typeof win.jQuery !== 'undefined') {
+                win.jQuery(el).click();
+              } else {
+                (el as HTMLElement).click();
+              }
+            });
+
             clickedSelectors.add(elementId);
             interactionCount++;
             clickedInIteration++;
 
-            // Wait for any AJAX content to load
-            try {
-              await page.waitForLoadState('networkidle', {
-                timeout: 3000,
-              });
-            } catch {
-              // If network doesn't go idle, just wait a bit
-              await page.waitForTimeout(this.options.clickDelay || 500);
-            }
+            // Wait for AJAX content to load - jqueryFileTree uses async loading
+            await page.waitForTimeout(this.options.clickDelay || 1000);
 
             // Extract links after each click (not just at the end)
             const newLinks = await this.extractCurrentLinks(page);
@@ -239,7 +250,9 @@ export class TreeScraper implements Scraper {
             // any newly revealed elements at the same level or deeper
             // This enables proper hierarchical expansion
             break; // Break to re-query and find newly revealed elements
-          } catch (_err) {}
+          } catch {
+            // Click failed, continue to next element
+          }
         }
 
         // If we clicked something with this selector, restart selector loop
