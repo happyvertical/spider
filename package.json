@@ -67,7 +67,7 @@
     "@changesets/cli": "^2.29.8",
     "@commitlint/cli": "^19.8.1",
     "@commitlint/config-conventional": "^19.8.1",
-    "@types/node": "24.10.3",
+    "@types/node": "24.10.4",
     "lefthook": "^2.0.0",
     "tsx": "^4.20.0",
     "typescript": "^5.9.3",
