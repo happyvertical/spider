@@ -6,11 +6,12 @@ The spider package provides web scraping and content extraction through multiple
 
 ## Key Features
 
-- **Provider Pattern**: Three adapters for different use cases (Simple, DOM, Crawlee)
+- **Provider Pattern**: Four adapters for different use cases (Simple, DOM, Crawlee, Crawl4ai)
 - **Standardized Interface**: All adapters implement ISpiderAdapter
 - **Built-in Caching**: Automatic response caching via @happyvertical/cache
 - **Navigation Expansion**: Crawlee adapter auto-expands accordions/dropdowns to discover hidden links
 - **Link Extraction**: Automatic extraction of all page links
+- **Markdown Conversion**: Crawl4ai adapter provides AI-friendly markdown output
 - **Environment Variable Configuration**: HAVE_SPIDER_* pattern for easy setup
 
 ## Architecture Overview
@@ -21,12 +22,13 @@ getSpider(options)
 Adapter Selection
     ├── Simple (fast HTTP + cheerio)
     ├── DOM (happy-dom processing + cheerio)
-    └── Crawlee (Playwright browser automation)
+    ├── Crawlee (Playwright browser automation)
+    └── Crawl4ai (remote server with markdown)
     ↓
 ISpiderAdapter Interface
     ├── fetch(url, options) → Page
     ├── Built-in caching (file-based)
-    └── Standardized output (url, content, links, raw)
+    └── Standardized output (url, content, links, raw, markdown?)
 ```
 
 ## Key APIs
@@ -108,6 +110,18 @@ const crawlee = await getSpider({
   userAgent: 'MyBot/1.0 (+https://mysite.com/bot)',
   cacheDir: '.cache/spider',
 });
+
+// Crawl4ai: Remote server with markdown conversion (AI-friendly)
+const crawl4ai = await getSpider({
+  adapter: 'crawl4ai',
+  baseUrl: 'http://crawl4ai.default.svc:11235', // or use HAVE_SPIDER_CRAWL4AI_URL
+  cacheDir: '.cache/spider',
+});
+
+// Crawl4ai provides markdown in addition to HTML
+const page = await crawl4ai.fetch('https://example.com');
+console.log(page.content);   // HTML content
+console.log(page.markdown);  // Markdown conversion (AI-friendly)
 ```
 
 ### Fetch Options
@@ -128,6 +142,9 @@ const page = await spider.fetch('https://example.com', {
 export HAVE_SPIDER_TIMEOUT=60000
 export HAVE_SPIDER_USER_AGENT="MyBot/1.0 (+https://mysite.com/bot)"
 export HAVE_SPIDER_MAX_REQUESTS=100
+
+# Crawl4ai server URL (for crawl4ai adapter)
+export HAVE_SPIDER_CRAWL4AI_URL="http://crawl4ai.default.svc:11235"
 ```
 
 ```typescript
@@ -144,10 +161,11 @@ await spider.fetch(url, { timeout: 30000 }); // Overrides to 30000ms
 
 ```typescript
 interface Page {
-  url: string;      // Final URL after redirects
-  content: string;  // Full HTML content
-  links: string[];  // Extracted links
-  raw: any;         // Adapter-specific raw response
+  url: string;       // Final URL after redirects
+  content: string;   // Full HTML content
+  links: Link[];     // Extracted links with metadata
+  raw: any;          // Adapter-specific raw response
+  markdown?: string; // Markdown content (crawl4ai adapter only)
 }
 ```
 
@@ -172,6 +190,17 @@ interface Page {
 - **Best For**: Accordion navigation, hidden links, AJAX content
 - **Special Feature**: Auto-expands `[aria-expanded="false"]`, accordions, `<details>` tags
 
+### Crawl4ai Adapter
+- **Speed**: Variable (depends on remote server), ~5ms cached
+- **Use Case**: AI-friendly content extraction, markdown conversion
+- **Dependencies**: undici (HTTP client to remote server)
+- **Best For**: LLM/AI pipelines, content summarization, remote scraping infrastructure
+- **Special Features**:
+  - Markdown conversion built-in (`page.markdown`)
+  - Structured link extraction from server
+  - Offloads browser overhead to Kubernetes cluster
+  - Configurable via `HAVE_SPIDER_CRAWL4AI_URL`
+
 ## Dependencies
 
 - **Internal**:
@@ -188,9 +217,9 @@ interface Page {
 ## Development Guidelines
 
 - All adapters must implement ISpiderAdapter interface completely
-- Cache keys prefixed by adapter type (`simple:`, `dom:`, `crawlee:`)
+- Cache keys prefixed by adapter type (`simple:`, `dom:`, `crawlee:`, `crawl4ai:`)
 - Default cache expiry: 5 minutes (300,000ms)
-- Default timeout: 30 seconds (30,000ms)
+- Default timeout: 30 seconds (30,000ms) for local adapters, 60 seconds for crawl4ai
 - Links should be absolute URLs (relative URLs converted)
 - Handle errors with ValidationError and NetworkError from @happyvertical/utils
 - Respect robots.txt and use descriptive User-Agent strings
@@ -199,12 +228,13 @@ interface Page {
 
 When working with spider:
 
-1. **Adapter Selection**: Start with Simple, fallback to Crawlee if content missing
-2. **Caching Strategy**: Crawlee benefits most (8000ms → 5ms), always enable caching
+1. **Adapter Selection**: Start with Simple, fallback to Crawlee if content missing, use Crawl4ai for AI pipelines
+2. **Caching Strategy**: Remote adapters (Crawlee, Crawl4ai) benefit most from caching, always enable
 3. **Navigation Expansion**: Crawlee runs up to 3 iterations clicking expandable elements
 4. **Performance**: Simple is 10x faster than DOM, 40x faster than Crawlee (uncached)
 5. **Error Handling**: NetworkError for HTTP failures, ValidationError for bad inputs
-6. **Real-World Testing**: Integration tests use Bentley town council site (accordion navigation)
+6. **Crawl4ai for AI**: When building LLM pipelines, prefer Crawl4ai for its markdown output
+7. **Real-World Testing**: Integration tests use Bentley town council site (accordion navigation)
 
 ## Common Patterns
 
@@ -250,7 +280,7 @@ const pages = await Promise.all(
   }))
 );
 
-// Integration with AI for content analysis
+// Integration with AI for content analysis (using simple adapter)
 import { getAI } from '@happyvertical/ai';
 
 const spider = await getSpider({ adapter: 'simple' });
@@ -262,6 +292,16 @@ const articleText = $('article').text();
 const ai = await getAI({ type: 'anthropic' });
 const summary = await ai.chat([
   { role: 'user', content: `Summarize: ${articleText}` }
+]);
+
+// Integration with AI using crawl4ai (markdown ready)
+const crawl4ai = await getSpider({ adapter: 'crawl4ai' });
+const page = await crawl4ai.fetch('https://news.example.com/article');
+
+// No cheerio needed - markdown is already extracted
+const ai = await getAI({ type: 'anthropic' });
+const summary = await ai.chat([
+  { role: 'user', content: `Summarize: ${page.markdown}` }
 ]);
 ```
 

@@ -1,4 +1,5 @@
 import type {
+  Crawl4aiAdapterOptions,
   CrawleeAdapterOptions,
   DomAdapterOptions,
   SimpleAdapterOptions,
@@ -34,6 +35,15 @@ function isCrawleeOptions(
 }
 
 /**
+ * Type guard for Crawl4ai adapter options
+ */
+function isCrawl4aiOptions(
+  options: SpiderAdapterOptions,
+): options is Crawl4aiAdapterOptions {
+  return options.adapter === 'crawl4ai';
+}
+
+/**
  * Factory function to create a spider adapter instance
  *
  * @param options - Configuration options for the spider adapter
@@ -54,9 +64,16 @@ function isCrawleeOptions(
  *   userAgent: 'MyBot/1.0'
  * });
  *
+ * // Create Crawl4ai remote adapter (connects to crawl4ai server)
+ * const crawl4aiSpider = await getSpider({
+ *   adapter: 'crawl4ai',
+ *   baseUrl: 'http://crawl4ai.default.svc:11235'
+ * });
+ *
  * // Use the adapter
  * const page = await spider.fetch('https://example.com');
  * console.log(page.links);
+ * console.log(page.markdown); // Available with crawl4ai adapter
  * ```
  */
 export async function getSpider(
@@ -75,6 +92,11 @@ export async function getSpider(
   if (isCrawleeOptions(options)) {
     const { CrawleeAdapter } = await import('../adapters/crawlee.js');
     return new CrawleeAdapter(options);
+  }
+
+  if (isCrawl4aiOptions(options)) {
+    const { Crawl4aiAdapter } = await import('../adapters/crawl4ai.js');
+    return new Crawl4aiAdapter(options);
   }
 
   // This should never happen due to TypeScript's discriminated union
