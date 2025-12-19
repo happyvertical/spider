@@ -62,6 +62,12 @@ export interface Page {
    * Useful for debugging or accessing adapter-specific data
    */
   raw: any;
+
+  /**
+   * Markdown representation of the page content (optional)
+   * Available when using adapters that provide markdown conversion (e.g., crawl4ai)
+   */
+  markdown?: string;
 }
 
 /**
@@ -195,12 +201,51 @@ export interface CrawleeAdapterOptions {
 }
 
 /**
+ * Options for Crawl4ai remote adapter
+ * Connects to a crawl4ai server running on Kubernetes or Docker
+ */
+export interface Crawl4aiAdapterOptions {
+  adapter: 'crawl4ai';
+  /**
+   * Base URL of the crawl4ai server
+   * @default 'http://localhost:11235'
+   * @env HAVE_SPIDER_CRAWL4AI_URL
+   */
+  baseUrl?: string;
+  /**
+   * Default cache directory for storing fetched pages
+   * @default '.cache/spider'
+   */
+  cacheDir?: string;
+  /**
+   * Cache provider configuration (optional, defaults to file)
+   * Use this to enable S3 caching in CI environments
+   */
+  cacheProvider?: CacheProviderConfig;
+  /**
+   * Whether to run browser in headless mode on the server
+   * @default true
+   */
+  headless?: boolean;
+  /**
+   * Custom user agent string
+   */
+  userAgent?: string;
+  /**
+   * Wait strategy for page load
+   * @default 'networkidle'
+   */
+  waitUntil?: 'load' | 'domcontentloaded' | 'networkidle';
+}
+
+/**
  * Discriminated union of all spider adapter options
  */
 export type SpiderAdapterOptions =
   | SimpleAdapterOptions
   | DomAdapterOptions
-  | CrawleeAdapterOptions;
+  | CrawleeAdapterOptions
+  | Crawl4aiAdapterOptions;
 
 // ============================================================================
 // Scraper Types - Content Extraction Strategies
@@ -237,7 +282,7 @@ export interface ScraperStrategy {
   type: ScraperType;
 
   /** Spider adapter used */
-  spider: 'simple' | 'dom' | 'crawlee';
+  spider: 'simple' | 'dom' | 'crawlee' | 'crawl4ai';
 
   /** Configuration used */
   config: Record<string, any>;
@@ -320,7 +365,7 @@ export interface BasicScraperOptions {
   scraper: 'basic';
 
   /** Which spider to use */
-  spider?: 'simple' | 'dom' | 'crawlee';
+  spider?: 'simple' | 'dom' | 'crawlee' | 'crawl4ai';
 
   /** Cache directory */
   cacheDir?: string;

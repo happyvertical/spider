@@ -21,6 +21,12 @@ describe('getSpider factory', () => {
     expect(typeof spider.fetch).toBe('function');
   });
 
+  it('should create crawl4ai adapter', async () => {
+    const spider = await getSpider({ adapter: 'crawl4ai' });
+    expect(spider).toBeDefined();
+    expect(typeof spider.fetch).toBe('function');
+  });
+
   it('should throw error for unsupported adapter', async () => {
     await expect(getSpider({ adapter: 'invalid' } as any)).rejects.toThrow(
       'Unsupported adapter',
@@ -271,5 +277,92 @@ describe.skipIf(process.env.CI === 'true')('CrawleeAdapter', () => {
 
     await expect(spider.fetch('')).rejects.toThrow(ValidationError);
     await expect(spider.fetch('not-valid')).rejects.toThrow(ValidationError);
+  });
+});
+
+// Skip crawl4ai tests unless a server is available
+const hasCrawl4ai = !!process.env.HAVE_SPIDER_CRAWL4AI_URL;
+
+describe.skipIf(!hasCrawl4ai)('Crawl4aiAdapter', () => {
+  it('should fetch a page via crawl4ai server', async () => {
+    const spider = await getSpider({
+      adapter: 'crawl4ai',
+    });
+
+    const page = await spider.fetch('https://example.com', { cache: false });
+
+    expect(page).toBeDefined();
+    expect(page.url).toContain('example.com');
+    expect(page.content).toBeDefined();
+    expect(typeof page.content).toBe('string');
+    expect(Array.isArray(page.links)).toBe(true);
+    expect(page.raw).toBeDefined();
+  }, 60000); // Longer timeout for remote server
+
+  it('should include markdown content', async () => {
+    const spider = await getSpider({ adapter: 'crawl4ai' });
+    const page = await spider.fetch('https://example.com', { cache: false });
+
+    // Crawl4ai provides markdown conversion
+    expect(page.markdown).toBeDefined();
+    expect(typeof page.markdown).toBe('string');
+  }, 60000);
+
+  it('should extract links from crawl4ai response', async () => {
+    const spider = await getSpider({ adapter: 'crawl4ai' });
+    const page = await spider.fetch('https://example.com', { cache: false });
+
+    expect(Array.isArray(page.links)).toBe(true);
+    expect(page.links.length).toBeGreaterThan(0);
+
+    // Verify Link structure
+    const link = page.links[0];
+    expect(link).toBeDefined();
+    expect(typeof link.href).toBe('string');
+    expect(typeof link.text).toBe('string');
+  }, 60000);
+
+  it('should cache fetched pages', async () => {
+    const spider = await getSpider({
+      adapter: 'crawl4ai',
+      cacheDir: '.cache/spider-test-crawl4ai',
+    });
+
+    const page1 = await spider.fetch('https://example.com', {
+      cache: true,
+      cacheExpiry: 60000,
+    });
+    const page2 = await spider.fetch('https://example.com', {
+      cache: true,
+      cacheExpiry: 60000,
+    });
+
+    expect(page2.content).toBe(page1.content);
+  }, 60000);
+
+  it('should handle custom user agent', async () => {
+    const spider = await getSpider({
+      adapter: 'crawl4ai',
+      userAgent: 'TestBot/1.0',
+    });
+
+    const page = await spider.fetch('https://example.com', { cache: false });
+    expect(page).toBeDefined();
+  }, 60000);
+
+  it('should throw ValidationError for invalid URL', async () => {
+    const spider = await getSpider({ adapter: 'crawl4ai' });
+
+    await expect(spider.fetch('')).rejects.toThrow(ValidationError);
+    await expect(spider.fetch('not-valid')).rejects.toThrow(ValidationError);
+  });
+
+  it('should throw NetworkError when server is unavailable', async () => {
+    const spider = await getSpider({
+      adapter: 'crawl4ai',
+      baseUrl: 'http://localhost:99999', // Invalid port
+    });
+
+    await expect(spider.fetch('https://example.com')).rejects.toThrow();
   });
 });

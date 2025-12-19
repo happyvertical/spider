@@ -34,6 +34,7 @@ export default {
       [
         'spider',
         'crawlee',
+        'crawl4ai',
         'simple',
         'dom',
         'tree',
@@ -75,5 +76,5 @@ export default {
 
     // Body max line length - disable for semantic-release commits
     'body-max-line-length': [0],
-  ],
+  },
 };
