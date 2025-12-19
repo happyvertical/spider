@@ -1,5 +1,17 @@
 # @happyvertical/spider
 
+## 0.60.5
+
+### Patch Changes
+
+- ### Features
+
+  - add crawl4ai adapter for remote scraping (spider)
+
+  ### Bug Fixes
+
+  - correct lefthook glob and commitlint syntax
+
 ## 0.60.4
 
 ### Patch Changes

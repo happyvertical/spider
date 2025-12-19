@@ -1,6 +1,6 @@
 {
   "name": "@happyvertical/spider",
-  "version": "0.60.4",
+  "version": "0.60.5",
   "description": "Lightweight web scraping and HTML content extraction using cheerio, happy-dom, and undici for high-performance server-side operations",
   "type": "module",
   "main": "./dist/index.js",
