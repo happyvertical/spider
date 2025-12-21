@@ -1,4 +1,24 @@
 /**
+ * Information about a file download triggered during page navigation
+ */
+export interface DownloadInfo {
+  /** The URL that triggered the download */
+  url: string;
+
+  /** Suggested filename from Content-Disposition or download event */
+  filename?: string;
+
+  /** MIME type of the downloaded content */
+  contentType?: string;
+
+  /** Raw file content as Uint8Array */
+  content?: Uint8Array;
+
+  /** Error message if download failed */
+  error?: string;
+}
+
+/**
  * Represents a link extracted from a web page with metadata
  */
 export interface Link {
@@ -68,6 +88,12 @@ export interface Page {
    * Available when using adapters that provide markdown conversion (e.g., crawl4ai)
    */
   markdown?: string;
+
+  /**
+   * Files downloaded during page navigation (e.g., Content-Disposition: attachment)
+   * Present when a URL triggers a file download instead of rendering a page
+   */
+  downloads?: DownloadInfo[];
 }
 
 /**

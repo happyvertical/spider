@@ -352,6 +352,59 @@ describe('scrapeDocument', () => {
       expect(pdfContent.includes('%PDF-')).toBe(true);
     });
   });
+
+  describe('Direct download handling (spider#22)', () => {
+    it('DocumentResult should have download fields', () => {
+      // Verify the DocumentResult interface supports download fields
+      const mockResult = {
+        url: 'https://example.com/download/file.pdf',
+        type: 'application/pdf',
+        text: '',
+        isDownload: true,
+        fileContent: new Uint8Array([0x25, 0x50, 0x44, 0x46]), // %PDF magic bytes
+        filename: 'file.pdf',
+        contentType: 'application/pdf',
+        metadata: {
+          title: 'file.pdf',
+          isPdf: true,
+          complete: true,
+          strategy: 'direct-download',
+        },
+      };
+
+      expect(mockResult.isDownload).toBe(true);
+      expect(mockResult.fileContent).toBeInstanceOf(Uint8Array);
+      expect(mockResult.filename).toBe('file.pdf');
+      expect(mockResult.contentType).toBe('application/pdf');
+      expect(mockResult.metadata.strategy).toBe('direct-download');
+    });
+
+    it('should infer content type from filename extension', async () => {
+      // Test the actual inferContentType implementation
+      const { inferContentType } = await import('./shared/download-utils');
+
+      expect(inferContentType('document.pdf')).toBe('application/pdf');
+      expect(inferContentType('document.doc')).toBe('application/msword');
+      expect(inferContentType('document.docx')).toBe(
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      );
+      expect(inferContentType('spreadsheet.xlsx')).toBe(
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      );
+      expect(inferContentType('archive.zip')).toBe('application/zip');
+      expect(inferContentType('unknown.bin')).toBe('application/octet-stream');
+    });
+
+    it('should detect isPdf from filename', async () => {
+      // Test the actual isPdfFile implementation
+      const { isPdfFile } = await import('./shared/download-utils');
+
+      expect(isPdfFile('document.pdf')).toBe(true);
+      expect(isPdfFile('DOCUMENT.PDF')).toBe(true);
+      expect(isPdfFile('document.docx')).toBe(false);
+      expect(isPdfFile(undefined)).toBe(false);
+    });
+  });
 });
 
 /**

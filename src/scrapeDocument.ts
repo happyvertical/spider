@@ -1,4 +1,5 @@
 import { getScraper } from './shared/scraper-factory';
+import { inferContentType, isPdfFile } from './shared/download-utils';
 import type { ScrapeOptions } from './shared/types';
 
 /**
@@ -54,6 +55,18 @@ export interface DocumentResult {
 
   /** Full HTML content (if applicable) */
   html?: string;
+
+  /** Whether this URL triggered a file download instead of rendering a page */
+  isDownload?: boolean;
+
+  /** Raw file content for downloads (as Uint8Array for ESM compatibility) */
+  fileContent?: Uint8Array;
+
+  /** Suggested filename from Content-Disposition header or download event */
+  filename?: string;
+
+  /** MIME content type of downloaded file */
+  contentType?: string;
 
   /** Additional metadata */
   metadata: {
@@ -448,6 +461,36 @@ export async function scrapeDocument(
 
   const result = await scraper.scrape(normalizedUrl, options);
   const actualUrl = normalizedUrl;
+
+  // Check if a download was triggered (Content-Disposition: attachment, etc.)
+  // This handles URLs that trigger file downloads instead of rendering pages
+  const downloads = result.raw?.downloads;
+  if (downloads && downloads.length > 0) {
+    const download = downloads[0]; // Use first download
+    const filename = download.filename || '';
+    const isPdf = isPdfFile(filename);
+
+    // Use content type from download if available, otherwise infer from filename
+    const contentType = download.contentType || inferContentType(filename);
+
+    return {
+      url: download.url || normalizedUrl,
+      type: contentType,
+      text: '',
+      html: undefined,
+      isDownload: true,
+      fileContent: download.content,
+      filename: download.filename,
+      contentType,
+      metadata: {
+        title: download.filename,
+        description: undefined,
+        isPdf,
+        complete: !!download.content && !download.error,
+        strategy: 'direct-download',
+      },
+    };
+  }
 
   // Defensive check: If result.content looks like HTML (starts with <!DOCTYPE, <html>, etc.),
   // we should be very careful about marking it as a PDF

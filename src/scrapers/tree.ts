@@ -3,6 +3,7 @@ import { getCache } from '@happyvertical/cache';
 import { Configuration, PlaywrightCrawler } from 'crawlee';
 import type {
   CacheProviderConfig,
+  DownloadInfo,
   Link,
   ScrapeMetrics,
   ScrapeOptions,
@@ -12,6 +13,10 @@ import type {
   ScraperType,
   TreeScraperOptions,
 } from '../shared/types';
+import {
+  handlePlaywrightDownload,
+  isDownloadError,
+} from '../shared/download-utils';
 
 /**
  * Tree scraper - expand hierarchical tree structures to reveal hidden content
@@ -318,6 +323,7 @@ export class TreeScraper implements Scraper {
 
     let scrapeResult: ScrapeResult | null = null;
     let scrapeError: Error | null = null;
+    const downloads: DownloadInfo[] = [];
 
     try {
       // Create a unique configuration for this crawler instance
@@ -337,6 +343,18 @@ export class TreeScraper implements Scraper {
               // Prevent macOS keychain password prompts
               args: ['--use-mock-keychain'],
             },
+          },
+          // Enable downloads so we can handle Content-Disposition: attachment URLs
+          browserPoolOptions: {
+            postPageCreateHooks: [
+              async (page) => {
+                // Listen for download events BEFORE any navigation
+                page.on('download', async (download) => {
+                  const info = await handlePlaywrightDownload(download);
+                  downloads.push(info);
+                });
+              },
+            ],
           },
           requestHandlerTimeoutSecs: Math.floor(timeout / 1000),
           preNavigationHooks: [
@@ -415,14 +433,87 @@ export class TreeScraper implements Scraper {
                   requestUrl: request.url,
                   loadedUrl: page.url(),
                   interactionCount,
+                  downloads: downloads.length > 0 ? downloads : undefined,
                 },
               };
             } catch (error) {
+              // Check if error is due to download starting - this is expected for download URLs
+              // Note: This relies on Playwright/Chromium error message format
+              const errorMessage =
+                error instanceof Error ? error.message : String(error);
+              if (isDownloadError(errorMessage)) {
+                // Download was triggered - wait for download handler to complete
+                await new Promise((resolve) => setTimeout(resolve, 2000));
+
+                if (downloads.length > 0) {
+                  const duration = Date.now() - startTime;
+                  scrapeResult = {
+                    url: request.url,
+                    content: '',
+                    links: [],
+                    strategy: {
+                      type: this.getType(),
+                      spider: 'crawlee',
+                      config: {},
+                      confidence: 0.8,
+                    },
+                    metrics: {
+                      duration,
+                      linkCount: 0,
+                      interactionCount: 0,
+                      complete: true,
+                    },
+                    raw: {
+                      requestUrl: request.url,
+                      loadedUrl: request.url,
+                      isDownload: true,
+                      downloads,
+                    },
+                  };
+                  return;
+                }
+              }
+
               scrapeError =
                 error instanceof Error ? error : new Error(String(error));
             }
           },
           failedRequestHandler: async ({ request }, error) => {
+            // Check if failure is due to download - not actually an error
+            // Note: This relies on Playwright/Chromium error message format
+            if (isDownloadError(error.message || '')) {
+              // Wait for download handler to complete
+              await new Promise((resolve) => setTimeout(resolve, 2000));
+
+              if (downloads.length > 0) {
+                const duration = Date.now() - startTime;
+                scrapeResult = {
+                  url: request.url,
+                  content: '',
+                  links: [],
+                  strategy: {
+                    type: this.getType(),
+                    spider: 'crawlee',
+                    config: {},
+                    confidence: 0.8,
+                  },
+                  metrics: {
+                    duration,
+                    linkCount: 0,
+                    interactionCount: 0,
+                    complete: true,
+                  },
+                  raw: {
+                    requestUrl: request.url,
+                    loadedUrl: request.url,
+                    isDownload: true,
+                    downloads,
+                  },
+                };
+                return;
+              }
+            }
+
             scrapeError = new Error(
               `Failed to scrape ${request.url}: ${error.message}`,
             );

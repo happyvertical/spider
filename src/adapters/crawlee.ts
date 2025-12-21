@@ -10,11 +10,16 @@ import { Configuration, PlaywrightCrawler } from 'crawlee';
 import type {
   CacheProviderConfig,
   CrawleeAdapterOptions,
+  DownloadInfo,
   FetchOptions,
   Link,
   Page,
   SpiderAdapter,
 } from '../shared/types';
+import {
+  handlePlaywrightDownload,
+  isDownloadError,
+} from '../shared/download-utils';
 
 /**
  * Crawlee headless browser adapter for fetching web pages
@@ -221,6 +226,7 @@ export class CrawleeAdapter implements SpiderAdapter {
     // Fetch the page with Crawlee
     let pageData: Page | null = null;
     let fetchError: Error | null = null;
+    const downloads: DownloadInfo[] = [];
 
     try {
       // Create a unique configuration for this crawler instance
@@ -241,6 +247,18 @@ export class CrawleeAdapter implements SpiderAdapter {
               // Prevent macOS keychain password prompts
               args: ['--use-mock-keychain'],
             },
+          },
+          // Enable downloads so we can handle Content-Disposition: attachment URLs
+          browserPoolOptions: {
+            postPageCreateHooks: [
+              async (page) => {
+                // Listen for download events BEFORE any navigation
+                page.on('download', async (download) => {
+                  const info = await handlePlaywrightDownload(download);
+                  downloads.push(info);
+                });
+              },
+            ],
           },
           requestHandlerTimeoutSecs: Math.floor(timeout / 1000),
           preNavigationHooks: [
@@ -283,17 +301,65 @@ export class CrawleeAdapter implements SpiderAdapter {
                 url: finalUrl,
                 content,
                 links,
+                downloads: downloads.length > 0 ? downloads : undefined,
                 raw: {
                   requestUrl: request.url,
                   loadedUrl: finalUrl,
                 },
               };
             } catch (error) {
+              // Check if error is due to download starting - this is expected for download URLs
+              // Note: This relies on Playwright/Chromium error message format
+              const errorMessage =
+                error instanceof Error ? error.message : String(error);
+              if (isDownloadError(errorMessage)) {
+                // Download was triggered - wait for download handler to complete
+                await new Promise((resolve) => setTimeout(resolve, 2000));
+
+                if (downloads.length > 0) {
+                  // We have downloads - return them as the page data
+                  pageData = {
+                    url: request.url,
+                    content: '', // No HTML content for download URLs
+                    links: [],
+                    downloads,
+                    raw: {
+                      requestUrl: request.url,
+                      loadedUrl: request.url,
+                      isDownload: true,
+                    },
+                  };
+                  return;
+                }
+              }
+
               fetchError =
                 error instanceof Error ? error : new Error(String(error));
             }
           },
           failedRequestHandler: async ({ request }, error) => {
+            // Check if failure is due to download - not actually an error
+            // Note: This relies on Playwright/Chromium error message format
+            if (isDownloadError(error.message || '')) {
+              // Wait for download handler to complete
+              await new Promise((resolve) => setTimeout(resolve, 2000));
+
+              if (downloads.length > 0) {
+                pageData = {
+                  url: request.url,
+                  content: '',
+                  links: [],
+                  downloads,
+                  raw: {
+                    requestUrl: request.url,
+                    loadedUrl: request.url,
+                    isDownload: true,
+                  },
+                };
+                return;
+              }
+            }
+
             fetchError = new NetworkError(
               `Failed to crawl ${request.url}: ${error.message}`,
               {
