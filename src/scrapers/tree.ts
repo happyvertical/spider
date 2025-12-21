@@ -1,8 +1,10 @@
 import type { CacheAdapter } from '@happyvertical/cache';
 import { getCache } from '@happyvertical/cache';
 import { Configuration, PlaywrightCrawler } from 'crawlee';
+import { readFile } from 'node:fs/promises';
 import type {
   CacheProviderConfig,
+  DownloadInfo,
   Link,
   ScrapeMetrics,
   ScrapeOptions,
@@ -318,6 +320,7 @@ export class TreeScraper implements Scraper {
 
     let scrapeResult: ScrapeResult | null = null;
     let scrapeError: Error | null = null;
+    const downloads: DownloadInfo[] = [];
 
     try {
       // Create a unique configuration for this crawler instance
@@ -337,6 +340,47 @@ export class TreeScraper implements Scraper {
               // Prevent macOS keychain password prompts
               args: ['--use-mock-keychain'],
             },
+          },
+          // Enable downloads so we can handle Content-Disposition: attachment URLs
+          browserPoolOptions: {
+            postPageCreateHooks: [
+              async (page) => {
+                // Listen for download events BEFORE any navigation
+                page.on('download', async (download) => {
+                  try {
+                    const downloadUrl = download.url();
+                    const filename = download.suggestedFilename();
+
+                    // Wait for download to complete and get the file path
+                    const path = await download.path();
+
+                    if (path) {
+                      // Read the downloaded file content
+                      const content = await readFile(path);
+
+                      downloads.push({
+                        url: downloadUrl,
+                        filename,
+                        content: new Uint8Array(content),
+                      });
+                    } else {
+                      downloads.push({
+                        url: downloadUrl,
+                        filename,
+                        error: 'Download path not available',
+                      });
+                    }
+                  } catch (err) {
+                    downloads.push({
+                      url: download.url(),
+                      filename: download.suggestedFilename(),
+                      error:
+                        err instanceof Error ? err.message : 'Download failed',
+                    });
+                  }
+                });
+              },
+            ],
           },
           requestHandlerTimeoutSecs: Math.floor(timeout / 1000),
           preNavigationHooks: [
@@ -415,14 +459,92 @@ export class TreeScraper implements Scraper {
                   requestUrl: request.url,
                   loadedUrl: page.url(),
                   interactionCount,
+                  downloads: downloads.length > 0 ? downloads : undefined,
                 },
               };
             } catch (error) {
+              // Check if error is due to download starting - this is expected for download URLs
+              const errorMessage =
+                error instanceof Error ? error.message : String(error);
+              if (
+                errorMessage.includes('Download is starting') ||
+                errorMessage.includes('net::ERR_ABORTED')
+              ) {
+                // Download was triggered - wait a moment for download handler to complete
+                await new Promise((resolve) => setTimeout(resolve, 2000));
+
+                if (downloads.length > 0) {
+                  const duration = Date.now() - startTime;
+                  scrapeResult = {
+                    url: request.url,
+                    content: '',
+                    links: [],
+                    strategy: {
+                      type: this.getType(),
+                      spider: 'crawlee',
+                      config: {},
+                      confidence: 0.8,
+                    },
+                    metrics: {
+                      duration,
+                      linkCount: 0,
+                      interactionCount: 0,
+                      complete: true,
+                    },
+                    raw: {
+                      requestUrl: request.url,
+                      loadedUrl: request.url,
+                      isDownload: true,
+                      downloads,
+                    },
+                  };
+                  return;
+                }
+              }
+
               scrapeError =
                 error instanceof Error ? error : new Error(String(error));
             }
           },
           failedRequestHandler: async ({ request }, error) => {
+            // Check if failure is due to download - not actually an error
+            const errorMessage = error.message || '';
+            if (
+              errorMessage.includes('Download is starting') ||
+              errorMessage.includes('net::ERR_ABORTED')
+            ) {
+              // Wait for download handler to complete
+              await new Promise((resolve) => setTimeout(resolve, 2000));
+
+              if (downloads.length > 0) {
+                const duration = Date.now() - startTime;
+                scrapeResult = {
+                  url: request.url,
+                  content: '',
+                  links: [],
+                  strategy: {
+                    type: this.getType(),
+                    spider: 'crawlee',
+                    config: {},
+                    confidence: 0.8,
+                  },
+                  metrics: {
+                    duration,
+                    linkCount: 0,
+                    interactionCount: 0,
+                    complete: true,
+                  },
+                  raw: {
+                    requestUrl: request.url,
+                    loadedUrl: request.url,
+                    isDownload: true,
+                    downloads,
+                  },
+                };
+                return;
+              }
+            }
+
             scrapeError = new Error(
               `Failed to scrape ${request.url}: ${error.message}`,
             );

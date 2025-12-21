@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getSpider } from './index';
+import { getSpider, scrapeDocument } from './index';
 
 /**
  * Optional integration test for Crawlee adapter
@@ -138,6 +138,92 @@ describe.skipIf(!RUN_OPTIONAL)(
       console.log(
         `\n🔗 Link types: ${hasRelativeLinks ? 'Relative' : 'None'} / ${hasAbsoluteLinks ? 'Absolute' : 'None'}`,
       );
+    }, 120000);
+  },
+);
+
+/**
+ * Tests for direct file download handling (spider#22)
+ *
+ * These tests verify that URLs which trigger Content-Disposition: attachment
+ * downloads are handled correctly instead of throwing errors.
+ */
+describe.skipIf(!RUN_OPTIONAL)(
+  'Crawlee Optional - Direct Download Handling (spider#22)',
+  () => {
+    it('should handle Eckville WebGuide download URL without throwing', async () => {
+      // This URL triggers a direct file download (Content-Disposition: attachment)
+      // Previously this would throw "page.goto: Download is starting"
+      const url = 'https://www.eckville.com/public/download/files/266248/';
+
+      const result = await scrapeDocument(url, {
+        scraper: 'crawlee' as any,
+        spider: 'crawlee',
+        timeout: 60000,
+        cache: false,
+      });
+
+      // Should not throw - instead should return download info
+      expect(result).toBeDefined();
+
+      // Check if it was detected as a download
+      if (result.isDownload) {
+        console.log('\n📥 Download detected:');
+        console.log(`  URL: ${result.url}`);
+        console.log(`  Filename: ${result.filename || 'unknown'}`);
+        console.log(`  Content-Type: ${result.contentType || 'unknown'}`);
+        console.log(`  Has content: ${!!result.fileContent}`);
+        if (result.fileContent) {
+          console.log(`  Content size: ${result.fileContent.length} bytes`);
+        }
+
+        expect(result.metadata.strategy).toBe('direct-download');
+        // File content should be present if download succeeded
+        if (result.metadata.complete) {
+          expect(result.fileContent).toBeDefined();
+          expect(result.fileContent!.length).toBeGreaterThan(0);
+        }
+      } else {
+        // If not detected as download, should be valid HTML
+        console.log('\n📄 Page content returned (not a download)');
+        expect(result.html || result.text).toBeTruthy();
+      }
+    }, 120000);
+
+    it('should handle download via CrawleeAdapter directly', async () => {
+      const spider = await getSpider({
+        adapter: 'crawlee',
+        headless: true,
+      });
+
+      const url = 'https://www.eckville.com/public/download/files/266248/';
+
+      // This should not throw
+      const page = await spider.fetch(url, {
+        timeout: 60000,
+        cache: false,
+      });
+
+      expect(page).toBeDefined();
+
+      // Check if downloads were captured
+      if (page.downloads && page.downloads.length > 0) {
+        console.log('\n📥 Downloads captured by adapter:');
+        for (const download of page.downloads) {
+          console.log(`  URL: ${download.url}`);
+          console.log(`  Filename: ${download.filename || 'unknown'}`);
+          console.log(`  Has content: ${!!download.content}`);
+          if (download.content) {
+            console.log(`  Size: ${download.content.length} bytes`);
+          }
+          if (download.error) {
+            console.log(`  Error: ${download.error}`);
+          }
+        }
+      } else {
+        console.log('\n📄 No downloads captured - page rendered normally');
+        console.log(`  Content length: ${page.content.length}`);
+      }
     }, 120000);
   },
 );

@@ -7,9 +7,11 @@ import {
   ValidationError,
 } from '@happyvertical/utils';
 import { Configuration, PlaywrightCrawler } from 'crawlee';
+import { readFile } from 'node:fs/promises';
 import type {
   CacheProviderConfig,
   CrawleeAdapterOptions,
+  DownloadInfo,
   FetchOptions,
   Link,
   Page,
@@ -221,6 +223,7 @@ export class CrawleeAdapter implements SpiderAdapter {
     // Fetch the page with Crawlee
     let pageData: Page | null = null;
     let fetchError: Error | null = null;
+    const downloads: DownloadInfo[] = [];
 
     try {
       // Create a unique configuration for this crawler instance
@@ -241,6 +244,55 @@ export class CrawleeAdapter implements SpiderAdapter {
               // Prevent macOS keychain password prompts
               args: ['--use-mock-keychain'],
             },
+          },
+          // Enable downloads so we can handle Content-Disposition: attachment URLs
+          browserPoolOptions: {
+            preLaunchHooks: [
+              async (_pageId, launchContext) => {
+                launchContext.launchOptions = {
+                  ...launchContext.launchOptions,
+                  // Playwright browser context options
+                };
+              },
+            ],
+            postPageCreateHooks: [
+              async (page) => {
+                // Listen for download events BEFORE any navigation
+                page.on('download', async (download) => {
+                  try {
+                    const downloadUrl = download.url();
+                    const filename = download.suggestedFilename();
+
+                    // Wait for download to complete and get the file path
+                    const path = await download.path();
+
+                    if (path) {
+                      // Read the downloaded file content
+                      const content = await readFile(path);
+
+                      downloads.push({
+                        url: downloadUrl,
+                        filename,
+                        content: new Uint8Array(content),
+                      });
+                    } else {
+                      downloads.push({
+                        url: downloadUrl,
+                        filename,
+                        error: 'Download path not available',
+                      });
+                    }
+                  } catch (err) {
+                    downloads.push({
+                      url: download.url(),
+                      filename: download.suggestedFilename(),
+                      error:
+                        err instanceof Error ? err.message : 'Download failed',
+                    });
+                  }
+                });
+              },
+            ],
           },
           requestHandlerTimeoutSecs: Math.floor(timeout / 1000),
           preNavigationHooks: [
@@ -283,17 +335,70 @@ export class CrawleeAdapter implements SpiderAdapter {
                 url: finalUrl,
                 content,
                 links,
+                downloads: downloads.length > 0 ? downloads : undefined,
                 raw: {
                   requestUrl: request.url,
                   loadedUrl: finalUrl,
                 },
               };
             } catch (error) {
+              // Check if error is due to download starting - this is expected for download URLs
+              const errorMessage =
+                error instanceof Error ? error.message : String(error);
+              if (
+                errorMessage.includes('Download is starting') ||
+                errorMessage.includes('net::ERR_ABORTED')
+              ) {
+                // Download was triggered - wait a moment for download handler to complete
+                await new Promise((resolve) => setTimeout(resolve, 2000));
+
+                if (downloads.length > 0) {
+                  // We have downloads - return them as the page data
+                  pageData = {
+                    url: request.url,
+                    content: '', // No HTML content for download URLs
+                    links: [],
+                    downloads,
+                    raw: {
+                      requestUrl: request.url,
+                      loadedUrl: request.url,
+                      isDownload: true,
+                    },
+                  };
+                  return;
+                }
+              }
+
               fetchError =
                 error instanceof Error ? error : new Error(String(error));
             }
           },
           failedRequestHandler: async ({ request }, error) => {
+            // Check if failure is due to download - not actually an error
+            const errorMessage = error.message || '';
+            if (
+              errorMessage.includes('Download is starting') ||
+              errorMessage.includes('net::ERR_ABORTED')
+            ) {
+              // Wait for download handler to complete
+              await new Promise((resolve) => setTimeout(resolve, 2000));
+
+              if (downloads.length > 0) {
+                pageData = {
+                  url: request.url,
+                  content: '',
+                  links: [],
+                  downloads,
+                  raw: {
+                    requestUrl: request.url,
+                    loadedUrl: request.url,
+                    isDownload: true,
+                  },
+                };
+                return;
+              }
+            }
+
             fetchError = new NetworkError(
               `Failed to crawl ${request.url}: ${error.message}`,
               {
