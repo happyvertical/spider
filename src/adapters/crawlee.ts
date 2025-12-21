@@ -7,7 +7,6 @@ import {
   ValidationError,
 } from '@happyvertical/utils';
 import { Configuration, PlaywrightCrawler } from 'crawlee';
-import { readFile } from 'node:fs/promises';
 import type {
   CacheProviderConfig,
   CrawleeAdapterOptions,
@@ -17,6 +16,10 @@ import type {
   Page,
   SpiderAdapter,
 } from '../shared/types';
+import {
+  handlePlaywrightDownload,
+  isDownloadError,
+} from '../shared/download-utils';
 
 /**
  * Crawlee headless browser adapter for fetching web pages
@@ -247,49 +250,12 @@ export class CrawleeAdapter implements SpiderAdapter {
           },
           // Enable downloads so we can handle Content-Disposition: attachment URLs
           browserPoolOptions: {
-            preLaunchHooks: [
-              async (_pageId, launchContext) => {
-                launchContext.launchOptions = {
-                  ...launchContext.launchOptions,
-                  // Playwright browser context options
-                };
-              },
-            ],
             postPageCreateHooks: [
               async (page) => {
                 // Listen for download events BEFORE any navigation
                 page.on('download', async (download) => {
-                  try {
-                    const downloadUrl = download.url();
-                    const filename = download.suggestedFilename();
-
-                    // Wait for download to complete and get the file path
-                    const path = await download.path();
-
-                    if (path) {
-                      // Read the downloaded file content
-                      const content = await readFile(path);
-
-                      downloads.push({
-                        url: downloadUrl,
-                        filename,
-                        content: new Uint8Array(content),
-                      });
-                    } else {
-                      downloads.push({
-                        url: downloadUrl,
-                        filename,
-                        error: 'Download path not available',
-                      });
-                    }
-                  } catch (err) {
-                    downloads.push({
-                      url: download.url(),
-                      filename: download.suggestedFilename(),
-                      error:
-                        err instanceof Error ? err.message : 'Download failed',
-                    });
-                  }
+                  const info = await handlePlaywrightDownload(download);
+                  downloads.push(info);
                 });
               },
             ],
@@ -343,13 +309,11 @@ export class CrawleeAdapter implements SpiderAdapter {
               };
             } catch (error) {
               // Check if error is due to download starting - this is expected for download URLs
+              // Note: This relies on Playwright/Chromium error message format
               const errorMessage =
                 error instanceof Error ? error.message : String(error);
-              if (
-                errorMessage.includes('Download is starting') ||
-                errorMessage.includes('net::ERR_ABORTED')
-              ) {
-                // Download was triggered - wait a moment for download handler to complete
+              if (isDownloadError(errorMessage)) {
+                // Download was triggered - wait for download handler to complete
                 await new Promise((resolve) => setTimeout(resolve, 2000));
 
                 if (downloads.length > 0) {
@@ -375,11 +339,8 @@ export class CrawleeAdapter implements SpiderAdapter {
           },
           failedRequestHandler: async ({ request }, error) => {
             // Check if failure is due to download - not actually an error
-            const errorMessage = error.message || '';
-            if (
-              errorMessage.includes('Download is starting') ||
-              errorMessage.includes('net::ERR_ABORTED')
-            ) {
+            // Note: This relies on Playwright/Chromium error message format
+            if (isDownloadError(error.message || '')) {
               // Wait for download handler to complete
               await new Promise((resolve) => setTimeout(resolve, 2000));
 

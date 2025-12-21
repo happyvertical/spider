@@ -1,4 +1,5 @@
 import { getScraper } from './shared/scraper-factory';
+import { inferContentType, isPdfFile } from './shared/download-utils';
 import type { ScrapeOptions } from './shared/types';
 
 /**
@@ -467,18 +468,10 @@ export async function scrapeDocument(
   if (downloads && downloads.length > 0) {
     const download = downloads[0]; // Use first download
     const filename = download.filename || '';
-    const isPdf = filename.toLowerCase().endsWith('.pdf');
+    const isPdf = isPdfFile(filename);
 
-    // Infer content type from filename
-    let contentType = 'application/octet-stream';
-    if (isPdf) {
-      contentType = 'application/pdf';
-    } else if (filename.toLowerCase().endsWith('.doc')) {
-      contentType = 'application/msword';
-    } else if (filename.toLowerCase().endsWith('.docx')) {
-      contentType =
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-    }
+    // Use content type from download if available, otherwise infer from filename
+    const contentType = download.contentType || inferContentType(filename);
 
     return {
       url: download.url || normalizedUrl,

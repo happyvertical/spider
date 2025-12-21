@@ -379,32 +379,30 @@ describe('scrapeDocument', () => {
       expect(mockResult.metadata.strategy).toBe('direct-download');
     });
 
-    it('should infer content type from filename extension', () => {
-      // Test content type inference logic
-      const inferContentType = (filename: string): string => {
-        if (filename.toLowerCase().endsWith('.pdf')) return 'application/pdf';
-        if (filename.toLowerCase().endsWith('.doc')) return 'application/msword';
-        if (filename.toLowerCase().endsWith('.docx'))
-          return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-        return 'application/octet-stream';
-      };
+    it('should infer content type from filename extension', async () => {
+      // Test the actual inferContentType implementation
+      const { inferContentType } = await import('./shared/download-utils');
 
       expect(inferContentType('document.pdf')).toBe('application/pdf');
       expect(inferContentType('document.doc')).toBe('application/msword');
       expect(inferContentType('document.docx')).toBe(
         'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
       );
+      expect(inferContentType('spreadsheet.xlsx')).toBe(
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      );
+      expect(inferContentType('archive.zip')).toBe('application/zip');
       expect(inferContentType('unknown.bin')).toBe('application/octet-stream');
     });
 
-    it('should detect isPdf from filename', () => {
-      // Test PDF detection from filename
-      const isPdfFile = (filename: string): boolean =>
-        filename.toLowerCase().endsWith('.pdf');
+    it('should detect isPdf from filename', async () => {
+      // Test the actual isPdfFile implementation
+      const { isPdfFile } = await import('./shared/download-utils');
 
       expect(isPdfFile('document.pdf')).toBe(true);
       expect(isPdfFile('DOCUMENT.PDF')).toBe(true);
       expect(isPdfFile('document.docx')).toBe(false);
+      expect(isPdfFile(undefined)).toBe(false);
     });
   });
 });
