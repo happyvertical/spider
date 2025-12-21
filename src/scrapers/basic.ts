@@ -103,13 +103,17 @@ export class BasicScraper implements Scraper {
     };
 
     // Convert Page to ScrapeResult
+    // Include downloads in raw if present (for direct file download handling)
     return {
       url: page.url,
       content: page.content,
       links: page.links,
       strategy,
       metrics,
-      raw: page.raw,
+      raw: {
+        ...page.raw,
+        downloads: page.downloads,
+      },
     };
   }
 }

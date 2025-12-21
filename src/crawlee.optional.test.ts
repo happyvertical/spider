@@ -156,8 +156,9 @@ describe.skipIf(!RUN_OPTIONAL)(
       // Previously this would throw "page.goto: Download is starting"
       const url = 'https://www.eckville.com/public/download/files/266248/';
 
+      // Use basic scraper with crawlee spider to get download handling
       const result = await scrapeDocument(url, {
-        scraper: 'crawlee' as any,
+        scraper: 'basic',
         spider: 'crawlee',
         timeout: 60000,
         cache: false,
