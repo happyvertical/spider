@@ -1,5 +1,17 @@
 # @happyvertical/spider
 
+## 0.60.6
+
+### Patch Changes
+
+- ### Features
+
+  - handle direct file downloads in scrapeDocument (spider)
+
+  ### Bug Fixes
+
+  - pass downloads through BasicScraper to scrapeDocument (spider)
+
 ## 0.60.5
 
 ### Patch Changes
