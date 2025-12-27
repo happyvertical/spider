@@ -12,8 +12,8 @@ importers:
         specifier: ^0.60.2
         version: 0.60.2
       '@happyvertical/files':
-        specifier: ^0.60.2
-        version: 0.60.2
+        specifier: ^0.62.0
+        version: 0.62.0
       '@happyvertical/utils':
         specifier: ^0.60.2
         version: 0.60.2
@@ -769,11 +769,14 @@ packages:
   '@happyvertical/cache@0.60.2':
     resolution: {integrity: sha512-xBZ8AlgGM/OL4+VlMJL23TmDuf2+F2A6Bqf/l+RdJs7RmN9gvumsnggnSXvYb4ROEBgkGSza01BZ0+kE/CQd+g==, tarball: https://npm.pkg.github.com/download/@happyvertical/cache/0.60.2/6d8f05746ef360913cb33f52db56922fc470853c}
 
-  '@happyvertical/files@0.60.2':
-    resolution: {integrity: sha512-Et4SS/zJcYTQv7DcIHvtCB0rwerVoYQjx9tIMHyjGPAtuLSLC7lsCslVo0BrCd0EUxIGwikPPNkJDFlOQjQSDg==, tarball: https://npm.pkg.github.com/download/@happyvertical/files/0.60.2/211f914199b84ab2bb5bfa818481cdd85e98b47f}
+  '@happyvertical/files@0.62.0':
+    resolution: {integrity: sha512-tRskkvzHIpgQ6K/JDFKeSrXuvDHOfJlA+cyEw1/DemLX7wiH7YfCTqECE9KKTpNUwBOk/v6EKDn7G/tpqjCo/Q==, tarball: https://npm.pkg.github.com/download/@happyvertical/files/0.62.0/c353d364dea471d22fc04dc2a70578bf110c7222}
 
   '@happyvertical/utils@0.60.2':
     resolution: {integrity: sha512-O545bmkf++TAfCP/MbXV/U0ucx+6TRi4dsiOpOO92xnu6N8kNPBVsZ2Kt+M1XBwhRLuhE0Y0lBBpXFm021+18A==, tarball: https://npm.pkg.github.com/download/@happyvertical/utils/0.60.2/0e25ff142cbf8c3e24c7cfa014b0a1155896fe8f}
+
+  '@happyvertical/utils@0.62.0':
+    resolution: {integrity: sha512-nZ/7UdNaWzTM3RmXQO/E0zaJz5XgnvpsfoTV927RLTo8XulgClyBAIXuo+CFpLqPBf0dyUDZLENpINjZaVCUow==, tarball: https://npm.pkg.github.com/download/@happyvertical/utils/0.62.0/dfc083f6972e90dfe57d4915e271590f6acec2ad}
 
   '@inquirer/external-editor@1.0.3':
     resolution: {integrity: sha512-RWbSrDiYmO4LbejWY7ttpxczuwQyZLBUyygsA9Nsv95hpzUWwnNTVQmAq3xuh7vNwCp07UTmE5i11XAEExx4RA==}
@@ -4482,11 +4485,18 @@ snapshots:
     transitivePeerDependencies:
       - aws-crt
 
-  '@happyvertical/files@0.60.2':
+  '@happyvertical/files@0.62.0':
     dependencies:
-      '@happyvertical/utils': 0.60.2
+      '@happyvertical/utils': 0.62.0
 
   '@happyvertical/utils@0.60.2':
+    dependencies:
+      '@paralleldrive/cuid2': 3.0.4
+      date-fns: 4.1.0
+      pluralize: 8.0.0
+      uuid: 13.0.0
+
+  '@happyvertical/utils@0.62.0':
     dependencies:
       '@paralleldrive/cuid2': 3.0.4
       date-fns: 4.1.0
