@@ -15,8 +15,8 @@ importers:
         specifier: ^0.60.2
         version: 0.60.2
       '@happyvertical/utils':
-        specifier: ^0.60.2
-        version: 0.60.2
+        specifier: ^0.62.0
+        version: 0.62.0
       '@mozilla/readability':
         specifier: ^0.6.0
         version: 0.6.0
@@ -774,6 +774,9 @@ packages:
 
   '@happyvertical/utils@0.60.2':
     resolution: {integrity: sha512-O545bmkf++TAfCP/MbXV/U0ucx+6TRi4dsiOpOO92xnu6N8kNPBVsZ2Kt+M1XBwhRLuhE0Y0lBBpXFm021+18A==, tarball: https://npm.pkg.github.com/download/@happyvertical/utils/0.60.2/0e25ff142cbf8c3e24c7cfa014b0a1155896fe8f}
+
+  '@happyvertical/utils@0.62.0':
+    resolution: {integrity: sha512-nZ/7UdNaWzTM3RmXQO/E0zaJz5XgnvpsfoTV927RLTo8XulgClyBAIXuo+CFpLqPBf0dyUDZLENpINjZaVCUow==, tarball: https://npm.pkg.github.com/download/@happyvertical/utils/0.62.0/dfc083f6972e90dfe57d4915e271590f6acec2ad}
 
   '@inquirer/external-editor@1.0.3':
     resolution: {integrity: sha512-RWbSrDiYmO4LbejWY7ttpxczuwQyZLBUyygsA9Nsv95hpzUWwnNTVQmAq3xuh7vNwCp07UTmE5i11XAEExx4RA==}
@@ -4487,6 +4490,13 @@ snapshots:
       '@happyvertical/utils': 0.60.2
 
   '@happyvertical/utils@0.60.2':
+    dependencies:
+      '@paralleldrive/cuid2': 3.0.4
+      date-fns: 4.1.0
+      pluralize: 8.0.0
+      uuid: 13.0.0
+
+  '@happyvertical/utils@0.62.0':
     dependencies:
       '@paralleldrive/cuid2': 3.0.4
       date-fns: 4.1.0
