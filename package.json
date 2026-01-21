@@ -51,7 +51,7 @@
     "prepare": "lefthook install"
   },
   "dependencies": {
-    "@happyvertical/cache": "^0.66.0",
+    "@happyvertical/cache": "^0.67.0",
     "@happyvertical/files": "^0.66.0",
     "@happyvertical/utils": "^0.66.0",
     "@mozilla/readability": "^0.6.0",
