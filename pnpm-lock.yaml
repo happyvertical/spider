@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@happyvertical/cache':
-        specifier: ^0.66.0
-        version: 0.66.11
+        specifier: ^0.67.0
+        version: 0.67.1
       '@happyvertical/files':
         specifier: ^0.66.0
         version: 0.66.11
@@ -779,14 +779,19 @@ packages:
       '@exodus/crypto':
         optional: true
 
-  '@happyvertical/cache@0.66.11':
-    resolution: {integrity: sha512-bEbdA67+cGHJ/XBcLhIZDBt1Eze2UM27BbFjnv6HqW2mhSKA9ku9ejGsyXLohWxfOFPSSi9c/pYUhqTv0Ov5bg==, tarball: https://npm.pkg.github.com/download/@happyvertical/cache/0.66.11/f29da01bd96a8332cebadc93c12834cf57929cb9}
+  '@happyvertical/cache@0.67.1':
+    resolution: {integrity: sha512-2cPyrlUAVSPGiLetS8QtPmSliYeu9EJOxAxG2qsuHKD/xP8g7r7/XkfaQQl1bVYanKF2aBdcJ6MCufXBr+pMig==, tarball: https://npm.pkg.github.com/download/@happyvertical/cache/0.67.1/99c6aeb66c7ca515b636a62db883d6a68e06350a}
+    hasBin: true
 
   '@happyvertical/files@0.66.11':
     resolution: {integrity: sha512-oUqxlyXN/FUQxE9X31AoyR2s+YUiUzCT5ERnSDpqpDvM07BXO75ZabYGr7rFQTmDnQwOMI2k/HcOWIaViINWug==, tarball: https://npm.pkg.github.com/download/@happyvertical/files/0.66.11/8cdedf1e3ee0b9e99c28d70c3143e045f6e92987}
 
   '@happyvertical/utils@0.66.11':
     resolution: {integrity: sha512-ARSofRmpVs68NpSGGmk6eHXXBmCqQP2LzTyhb/HHoZpO+7iny+WGuvknce2cGK1XAvWnmdjwwwjOX3xXDIEz3w==, tarball: https://npm.pkg.github.com/download/@happyvertical/utils/0.66.11/7f6cbb1352f8bd85d372fea3f46454739f91f001}
+
+  '@happyvertical/utils@0.67.1':
+    resolution: {integrity: sha512-YeXZC+SOdnR8NsCSMK2FwwARyCcpS1AAYn8Sib4uwJ3+gZwsLyebUs3gkZ8/OjSKJrEPUT16TaWBhSiYkPabGg==, tarball: https://npm.pkg.github.com/download/@happyvertical/utils/0.67.1/4cb8fd805fbe9b6a42837ecb97189c9a367b2e01}
+    hasBin: true
 
   '@inquirer/external-editor@1.0.3':
     resolution: {integrity: sha512-RWbSrDiYmO4LbejWY7ttpxczuwQyZLBUyygsA9Nsv95hpzUWwnNTVQmAq3xuh7vNwCp07UTmE5i11XAEExx4RA==}
@@ -4498,11 +4503,11 @@ snapshots:
 
   '@exodus/bytes@1.8.0': {}
 
-  '@happyvertical/cache@0.66.11':
+  '@happyvertical/cache@0.67.1':
     dependencies:
       '@aws-sdk/client-s3': 3.969.0
       '@aws-sdk/credential-providers': 3.969.0
-      '@happyvertical/utils': 0.66.11
+      '@happyvertical/utils': 0.67.1
       redis: 5.10.0
     transitivePeerDependencies:
       - aws-crt
@@ -4512,6 +4517,13 @@ snapshots:
       '@happyvertical/utils': 0.66.11
 
   '@happyvertical/utils@0.66.11':
+    dependencies:
+      '@paralleldrive/cuid2': 3.0.6
+      date-fns: 4.1.0
+      pluralize: 8.0.0
+      uuid: 13.0.0
+
+  '@happyvertical/utils@0.67.1':
     dependencies:
       '@paralleldrive/cuid2': 3.0.6
       date-fns: 4.1.0
