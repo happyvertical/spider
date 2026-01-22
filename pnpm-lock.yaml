@@ -12,8 +12,8 @@ importers:
         specifier: ^0.67.0
         version: 0.67.1
       '@happyvertical/files':
-        specifier: ^0.66.0
-        version: 0.66.11
+        specifier: ^0.67.0
+        version: 0.67.1
       '@happyvertical/utils':
         specifier: ^0.66.0
         version: 0.66.11
@@ -783,8 +783,9 @@ packages:
     resolution: {integrity: sha512-2cPyrlUAVSPGiLetS8QtPmSliYeu9EJOxAxG2qsuHKD/xP8g7r7/XkfaQQl1bVYanKF2aBdcJ6MCufXBr+pMig==, tarball: https://npm.pkg.github.com/download/@happyvertical/cache/0.67.1/99c6aeb66c7ca515b636a62db883d6a68e06350a}
     hasBin: true
 
-  '@happyvertical/files@0.66.11':
-    resolution: {integrity: sha512-oUqxlyXN/FUQxE9X31AoyR2s+YUiUzCT5ERnSDpqpDvM07BXO75ZabYGr7rFQTmDnQwOMI2k/HcOWIaViINWug==, tarball: https://npm.pkg.github.com/download/@happyvertical/files/0.66.11/8cdedf1e3ee0b9e99c28d70c3143e045f6e92987}
+  '@happyvertical/files@0.67.1':
+    resolution: {integrity: sha512-vvAQ9qmHjg4ctNq6mZZ3xhR6I88X5ptMyj0Ndm9rTy2O4khc5j3VUvcfBBJLRAgfynRyW6rCgQQURcfPNDismA==, tarball: https://npm.pkg.github.com/download/@happyvertical/files/0.67.1/c197fb3578396a7b9195188bfc78c8f61e170633}
+    hasBin: true
 
   '@happyvertical/utils@0.66.11':
     resolution: {integrity: sha512-ARSofRmpVs68NpSGGmk6eHXXBmCqQP2LzTyhb/HHoZpO+7iny+WGuvknce2cGK1XAvWnmdjwwwjOX3xXDIEz3w==, tarball: https://npm.pkg.github.com/download/@happyvertical/utils/0.66.11/7f6cbb1352f8bd85d372fea3f46454739f91f001}
@@ -4512,9 +4513,9 @@ snapshots:
     transitivePeerDependencies:
       - aws-crt
 
-  '@happyvertical/files@0.66.11':
+  '@happyvertical/files@0.67.1':
     dependencies:
-      '@happyvertical/utils': 0.66.11
+      '@happyvertical/utils': 0.67.1
 
   '@happyvertical/utils@0.66.11':
     dependencies:
