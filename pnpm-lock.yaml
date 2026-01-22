@@ -15,8 +15,8 @@ importers:
         specifier: ^0.67.0
         version: 0.67.1
       '@happyvertical/utils':
-        specifier: ^0.66.0
-        version: 0.66.11
+        specifier: ^0.67.0
+        version: 0.67.1
       '@mozilla/readability':
         specifier: ^0.6.0
         version: 0.6.0
@@ -786,9 +786,6 @@ packages:
   '@happyvertical/files@0.67.1':
     resolution: {integrity: sha512-vvAQ9qmHjg4ctNq6mZZ3xhR6I88X5ptMyj0Ndm9rTy2O4khc5j3VUvcfBBJLRAgfynRyW6rCgQQURcfPNDismA==, tarball: https://npm.pkg.github.com/download/@happyvertical/files/0.67.1/c197fb3578396a7b9195188bfc78c8f61e170633}
     hasBin: true
-
-  '@happyvertical/utils@0.66.11':
-    resolution: {integrity: sha512-ARSofRmpVs68NpSGGmk6eHXXBmCqQP2LzTyhb/HHoZpO+7iny+WGuvknce2cGK1XAvWnmdjwwwjOX3xXDIEz3w==, tarball: https://npm.pkg.github.com/download/@happyvertical/utils/0.66.11/7f6cbb1352f8bd85d372fea3f46454739f91f001}
 
   '@happyvertical/utils@0.67.1':
     resolution: {integrity: sha512-YeXZC+SOdnR8NsCSMK2FwwARyCcpS1AAYn8Sib4uwJ3+gZwsLyebUs3gkZ8/OjSKJrEPUT16TaWBhSiYkPabGg==, tarball: https://npm.pkg.github.com/download/@happyvertical/utils/0.67.1/4cb8fd805fbe9b6a42837ecb97189c9a367b2e01}
@@ -4516,13 +4513,6 @@ snapshots:
   '@happyvertical/files@0.67.1':
     dependencies:
       '@happyvertical/utils': 0.67.1
-
-  '@happyvertical/utils@0.66.11':
-    dependencies:
-      '@paralleldrive/cuid2': 3.0.6
-      date-fns: 4.1.0
-      pluralize: 8.0.0
-      uuid: 13.0.0
 
   '@happyvertical/utils@0.67.1':
     dependencies:
