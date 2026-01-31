@@ -340,8 +340,14 @@ export class TreeScraper implements Scraper {
           launchContext: {
             launchOptions: {
               headless: this.options.headless,
-              // Prevent macOS keychain password prompts
-              args: ['--use-mock-keychain'],
+              // Browser args for reliable operation in containers and CI
+              args: [
+                '--use-mock-keychain', // Prevent macOS keychain password prompts
+                '--no-sandbox', // Required for running in containers/as root
+                '--disable-setuid-sandbox', // Disable setuid sandbox
+                '--disable-dev-shm-usage', // Use /tmp instead of /dev/shm (containers have limited shm)
+                '--disable-gpu', // Disable GPU (not available in headless containers)
+              ],
             },
           },
           // Enable downloads so we can handle Content-Disposition: attachment URLs
