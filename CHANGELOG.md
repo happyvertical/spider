@@ -1,5 +1,25 @@
 # @happyvertical/spider
 
+## 0.60.8
+
+### Patch Changes
+
+- ### Bug Fixes
+
+  - sync test.yml with ocr — add workflow_call secrets declaration (#48) (ci)
+  - handle multi-line commit bodies in auto-changeset (#47) (ci)
+  - auto-publish on dep updates, sync publish workflow with ocr (#45)
+
+  ### Dependencies
+
+  - update all dependencies (#44)
+  - update @types/node to v24.10.11 (#43)
+  - update @happyvertical/utils to ^0.68.0 (#42)
+  - update @happyvertical/files to ^0.68.0 (#41)
+  - update @happyvertical/cache to ^0.68.0 (#40)
+  - update @types/node to v24.10.10 (#39)
+  - update pnpm to v10.28.2 (#37)
+
 ## 0.60.7
 
 ### Patch Changes
