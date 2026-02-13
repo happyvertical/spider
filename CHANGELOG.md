@@ -1,5 +1,13 @@
 # @happyvertical/spider
 
+## 0.60.9
+
+### Patch Changes
+
+- ### Dependencies
+
+  - update all dependencies (#49)
+
 ## 0.60.8
 
 ### Patch Changes
