@@ -36,8 +36,8 @@ importers:
         specifier: ^1.56.1
         version: 1.57.0
       undici:
-        specifier: ^7.16.0
-        version: 7.16.0
+        specifier: ^8.0.0
+        version: 8.1.0
     devDependencies:
       '@biomejs/biome':
         specifier: 1.9.4
@@ -3161,6 +3161,10 @@ packages:
   undici@7.16.0:
     resolution: {integrity: sha512-QEg3HPMll0o3t2ourKwOeUAZ159Kn9mx5pnzHRQO8+Wixmh88YdZRiIwat0iNzNNXn0yoEtXJqFpyW7eM8BV7g==}
     engines: {node: '>=20.18.1'}
+
+  undici@8.1.0:
+    resolution: {integrity: sha512-E9MkTS4xXLnRPYqxH2e6Hr2/49e7WFDKczKcCaFH4VaZs2iNvHMqeIkyUAD9vM8kujy9TjVrRlQ5KkdEJxB2pw==}
+    engines: {node: '>=22.19.0'}
 
   unicorn-magic@0.1.0:
     resolution: {integrity: sha512-lRfVq8fE8gz6QMBuDM6a+LO3IAzTi05H6gCVaUpir2E1Rwpo4ZUog45KpNXKC/Mn3Yb9UDuHumeFTo9iV/D9FQ==}
@@ -7185,6 +7189,8 @@ snapshots:
   undici-types@7.16.0: {}
 
   undici@7.16.0: {}
+
+  undici@8.1.0: {}
 
   unicorn-magic@0.1.0: {}
 
