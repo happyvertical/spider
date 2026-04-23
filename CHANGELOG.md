@@ -1,5 +1,13 @@
 # @happyvertical/spider
 
+## 0.60.15
+
+### Patch Changes
+
+- ### Dependencies
+
+  - update pnpm/action-setup action to v5 (#57)
+
 ## 0.60.14
 
 ### Patch Changes
