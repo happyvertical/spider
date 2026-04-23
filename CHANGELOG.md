@@ -1,5 +1,13 @@
 # @happyvertical/spider
 
+## 0.60.14
+
+### Patch Changes
+
+- ### Dependencies
+
+  - update actions/create-github-app-token action to v3 (#55)
+
 ## 0.60.13
 
 ### Patch Changes
