@@ -1,5 +1,13 @@
 # @happyvertical/spider
 
+## 0.60.16
+
+### Patch Changes
+
+- ### Dependencies
+
+  - update actions/github-script action to v9 (#60)
+
 ## 0.60.15
 
 ### Patch Changes
