@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@happyvertical/cache':
-        specifier: ^0.71.0
-        version: 0.71.25
+        specifier: ^0.72.0
+        version: 0.72.0
       '@happyvertical/files':
         specifier: ^0.71.0
         version: 0.71.31
@@ -779,20 +779,20 @@ packages:
       '@exodus/crypto':
         optional: true
 
-  '@happyvertical/cache@0.71.25':
-    resolution: {integrity: sha512-wwFbmU/VxO63ZtGgSywx9fnmojgBFi/McmKOQ3OWQbHTZmcVsf6QU5az/rPKMt8HCMZfLpkwsS9hHyAF65L8XA==, tarball: https://npm.pkg.github.com/download/@happyvertical/cache/0.71.25/babcd9a9572246688b3bff71f1b49d09194fcb31}
+  '@happyvertical/cache@0.72.0':
+    resolution: {integrity: sha512-GU1x5sMgf0Q6ap3rMcK1h4ne59/A8bxMM8z8TrCcSrUJeAdOY1/7JQf3C/aIM9FT+sZ6OkdeAW09ZjdOWlJzoQ==, tarball: https://npm.pkg.github.com/download/@happyvertical/cache/0.72.0/a05ef57a8086e3bc369f805eccfa5664b2cf238c}
     hasBin: true
 
   '@happyvertical/files@0.71.31':
     resolution: {integrity: sha512-nx6XLrNLkXgJUqw80AwGKO+VEV1sHq3fWlBwZ6Mj5YQ+R2LVpb2jYwyuJLrNMX6DzKFcEXhloCgbiWMKqky9ew==, tarball: https://npm.pkg.github.com/download/@happyvertical/files/0.71.31/3659054aea8d32215cb15ec989b3aaaae0eb6352}
     hasBin: true
 
-  '@happyvertical/utils@0.71.25':
-    resolution: {integrity: sha512-6rUtIT7Q19ddnHr/NLq+q5DnIqPxvq/vM2yFUTHWOVnAFw2aYLOLpAqKS2OFuOl26MmuMhQaUehMpO3ZbmQXjw==, tarball: https://npm.pkg.github.com/download/@happyvertical/utils/0.71.25/b5ecca29f4f52bf98224ba1ed191301187b39142}
-    hasBin: true
-
   '@happyvertical/utils@0.71.31':
     resolution: {integrity: sha512-kKVh6q55E+1OQ5F2wi6+KRJylImqjeJvBHtEboyAsPoeGbQVvV+lRzJus2iac4cYHK/Ox8xbzZildwqnV8HECw==, tarball: https://npm.pkg.github.com/download/@happyvertical/utils/0.71.31/1b19543d1640f5b9427635d066611471f9c87118}
+    hasBin: true
+
+  '@happyvertical/utils@0.72.0':
+    resolution: {integrity: sha512-3hX91dmZzuiRmBpCj/9XsATEbQE0s8zUaPpcGcE0GGl3i4NFiPklx5ZS2nW6SzYXEsBMajUniDYSO4IlLIw4fg==, tarball: https://npm.pkg.github.com/download/@happyvertical/utils/0.72.0/02bf9d8046b97b3dd35d2fd4ae24b24741c0b1c7}
     hasBin: true
 
   '@inquirer/external-editor@1.0.3':
@@ -4632,11 +4632,11 @@ snapshots:
 
   '@exodus/bytes@1.8.0': {}
 
-  '@happyvertical/cache@0.71.25':
+  '@happyvertical/cache@0.72.0':
     dependencies:
       '@aws-sdk/client-s3': 3.1034.0
       '@aws-sdk/credential-providers': 3.1034.0
-      '@happyvertical/utils': 0.71.25
+      '@happyvertical/utils': 0.72.0
       redis: 5.12.1
     transitivePeerDependencies:
       - '@node-rs/xxhash'
@@ -4654,14 +4654,14 @@ snapshots:
       - encoding
       - supports-color
 
-  '@happyvertical/utils@0.71.25':
+  '@happyvertical/utils@0.71.31':
     dependencies:
       '@paralleldrive/cuid2': 3.3.0
       date-fns: 4.1.0
       pluralize: 8.0.0
       uuid: 13.0.0
 
-  '@happyvertical/utils@0.71.31':
+  '@happyvertical/utils@0.72.0':
     dependencies:
       '@paralleldrive/cuid2': 3.3.0
       date-fns: 4.1.0
