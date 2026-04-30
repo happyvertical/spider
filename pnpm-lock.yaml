@@ -12,8 +12,8 @@ importers:
         specifier: ^0.72.0
         version: 0.72.0
       '@happyvertical/files':
-        specifier: ^0.71.0
-        version: 0.71.31
+        specifier: ^0.72.0
+        version: 0.72.3
       '@happyvertical/utils':
         specifier: ^0.71.0
         version: 0.71.31
@@ -783,8 +783,8 @@ packages:
     resolution: {integrity: sha512-GU1x5sMgf0Q6ap3rMcK1h4ne59/A8bxMM8z8TrCcSrUJeAdOY1/7JQf3C/aIM9FT+sZ6OkdeAW09ZjdOWlJzoQ==, tarball: https://npm.pkg.github.com/download/@happyvertical/cache/0.72.0/a05ef57a8086e3bc369f805eccfa5664b2cf238c}
     hasBin: true
 
-  '@happyvertical/files@0.71.31':
-    resolution: {integrity: sha512-nx6XLrNLkXgJUqw80AwGKO+VEV1sHq3fWlBwZ6Mj5YQ+R2LVpb2jYwyuJLrNMX6DzKFcEXhloCgbiWMKqky9ew==, tarball: https://npm.pkg.github.com/download/@happyvertical/files/0.71.31/3659054aea8d32215cb15ec989b3aaaae0eb6352}
+  '@happyvertical/files@0.72.3':
+    resolution: {integrity: sha512-K+yBCX4mpZYrvUUJIHj8Lo8HFXTaVPD/ngSobkhPTySF/nCDTPR9K+x8oruVfyhYStGViguD8Uol4sQys0Ma1g==, tarball: https://npm.pkg.github.com/download/@happyvertical/files/0.72.3/eef725807edd15273e50e910504167d33000c5b5}
     hasBin: true
 
   '@happyvertical/utils@0.71.31':
@@ -793,6 +793,10 @@ packages:
 
   '@happyvertical/utils@0.72.0':
     resolution: {integrity: sha512-3hX91dmZzuiRmBpCj/9XsATEbQE0s8zUaPpcGcE0GGl3i4NFiPklx5ZS2nW6SzYXEsBMajUniDYSO4IlLIw4fg==, tarball: https://npm.pkg.github.com/download/@happyvertical/utils/0.72.0/02bf9d8046b97b3dd35d2fd4ae24b24741c0b1c7}
+    hasBin: true
+
+  '@happyvertical/utils@0.72.3':
+    resolution: {integrity: sha512-/F0NJky8NPGy0CZVshmzii+3lV4hORvtXIn86v0SQprTMaYs3ZYUBYy9xDcOcEQgWEz6ml3NzDPsXvAju3gigA==, tarball: https://npm.pkg.github.com/download/@happyvertical/utils/0.72.3/5fb5eddf42f668b3897f679bcf927ec838a1ac51}
     hasBin: true
 
   '@inquirer/external-editor@1.0.3':
@@ -3195,6 +3199,7 @@ packages:
 
   uuid@9.0.1:
     resolution: {integrity: sha512-b+1eJOlsR9K8HJpow9Ok3fiWOWSIcIzXodvv0rQjVoOVNpWMpxf1wZNpt4y9h10odCNrqnYp1OBzRktckBe3sA==}
+    deprecated: uuid@10 and below is no longer supported.  For ESM codebases, update to uuid@latest.  For CommonJS codebases, use uuid@11 (but be aware this version will likely be deprecated in 2028).
     hasBin: true
 
   vali-date@1.0.0:
@@ -4643,10 +4648,10 @@ snapshots:
       - '@opentelemetry/api'
       - aws-crt
 
-  '@happyvertical/files@0.71.31':
+  '@happyvertical/files@0.72.3':
     dependencies:
       '@aws-sdk/client-s3': 3.1034.0
-      '@happyvertical/utils': 0.71.31
+      '@happyvertical/utils': 0.72.3
       google-auth-library: 9.15.1
       googleapis: 144.0.0
     transitivePeerDependencies:
@@ -4662,6 +4667,13 @@ snapshots:
       uuid: 13.0.0
 
   '@happyvertical/utils@0.72.0':
+    dependencies:
+      '@paralleldrive/cuid2': 3.3.0
+      date-fns: 4.1.0
+      pluralize: 8.0.0
+      uuid: 13.0.0
+
+  '@happyvertical/utils@0.72.3':
     dependencies:
       '@paralleldrive/cuid2': 3.3.0
       date-fns: 4.1.0
