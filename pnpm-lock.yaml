@@ -15,8 +15,8 @@ importers:
         specifier: ^0.72.0
         version: 0.72.3
       '@happyvertical/utils':
-        specifier: ^0.71.0
-        version: 0.71.31
+        specifier: ^0.72.0
+        version: 0.72.3
       '@mozilla/readability':
         specifier: ^0.6.0
         version: 0.6.0
@@ -785,10 +785,6 @@ packages:
 
   '@happyvertical/files@0.72.3':
     resolution: {integrity: sha512-K+yBCX4mpZYrvUUJIHj8Lo8HFXTaVPD/ngSobkhPTySF/nCDTPR9K+x8oruVfyhYStGViguD8Uol4sQys0Ma1g==, tarball: https://npm.pkg.github.com/download/@happyvertical/files/0.72.3/eef725807edd15273e50e910504167d33000c5b5}
-    hasBin: true
-
-  '@happyvertical/utils@0.71.31':
-    resolution: {integrity: sha512-kKVh6q55E+1OQ5F2wi6+KRJylImqjeJvBHtEboyAsPoeGbQVvV+lRzJus2iac4cYHK/Ox8xbzZildwqnV8HECw==, tarball: https://npm.pkg.github.com/download/@happyvertical/utils/0.71.31/1b19543d1640f5b9427635d066611471f9c87118}
     hasBin: true
 
   '@happyvertical/utils@0.72.0':
@@ -4658,13 +4654,6 @@ snapshots:
       - aws-crt
       - encoding
       - supports-color
-
-  '@happyvertical/utils@0.71.31':
-    dependencies:
-      '@paralleldrive/cuid2': 3.3.0
-      date-fns: 4.1.0
-      pluralize: 8.0.0
-      uuid: 13.0.0
 
   '@happyvertical/utils@0.72.0':
     dependencies:
