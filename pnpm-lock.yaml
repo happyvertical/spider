@@ -12,8 +12,8 @@ importers:
         specifier: ^0.73.0
         version: 0.73.1
       '@happyvertical/files':
-        specifier: ^0.72.0
-        version: 0.72.3
+        specifier: ^0.73.0
+        version: 0.73.1
       '@happyvertical/utils':
         specifier: ^0.72.0
         version: 0.72.3
@@ -783,8 +783,8 @@ packages:
     resolution: {integrity: sha512-PTPicuLNU6cLG59duBenrRD+P/3tUlSMs5wUtN64YVj4wkHSBvQVr3owWZBK83K+AWP6f2KlG212e+8DpQZU7Q==, tarball: https://npm.pkg.github.com/download/@happyvertical/cache/0.73.1/9e7c2a97a0240b92f5bfacb205e3de6ebf1a11b0}
     hasBin: true
 
-  '@happyvertical/files@0.72.3':
-    resolution: {integrity: sha512-K+yBCX4mpZYrvUUJIHj8Lo8HFXTaVPD/ngSobkhPTySF/nCDTPR9K+x8oruVfyhYStGViguD8Uol4sQys0Ma1g==, tarball: https://npm.pkg.github.com/download/@happyvertical/files/0.72.3/eef725807edd15273e50e910504167d33000c5b5}
+  '@happyvertical/files@0.73.1':
+    resolution: {integrity: sha512-Zurfyti53U4I3qCu4k2gDiDBom8ileC5mkojvJRri0b5oyqd6kWoYVym58u6T2wwL/lW4S9sm0Ev71ZxRQ2diQ==, tarball: https://npm.pkg.github.com/download/@happyvertical/files/0.73.1/a2cd6d590149166e5829e0018a804732e394bb6a}
     hasBin: true
 
   '@happyvertical/utils@0.72.3':
@@ -4644,10 +4644,10 @@ snapshots:
       - '@opentelemetry/api'
       - aws-crt
 
-  '@happyvertical/files@0.72.3':
+  '@happyvertical/files@0.73.1':
     dependencies:
       '@aws-sdk/client-s3': 3.1034.0
-      '@happyvertical/utils': 0.72.3
+      '@happyvertical/utils': 0.73.1
       google-auth-library: 9.15.1
       googleapis: 144.0.0
     transitivePeerDependencies:
