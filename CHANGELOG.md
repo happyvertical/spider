@@ -1,5 +1,24 @@
 # @happyvertical/spider
 
+## 0.60.17
+
+### Patch Changes
+
+- ### Dependencies
+
+  - update all dependencies (#75)
+  - update all dependencies (#74)
+  - update all dependencies (#71)
+  - update @happyvertical/utils to ^0.73.0 (#70)
+  - update @happyvertical/files to ^0.73.0 (#69)
+  - update @happyvertical/cache to ^0.73.0 (#68)
+  - update pnpm/action-setup digest to 26f6d4f (#67)
+  - update @happyvertical/utils to ^0.72.0 (#66)
+  - update @happyvertical/files to ^0.72.0 (#65)
+  - update @happyvertical/cache to ^0.72.0 (#64)
+  - update pnpm to v10.33.2 (#62)
+  - update pnpm/action-setup action to v6 (#61)
+
 ## 0.60.16
 
 ### Patch Changes
