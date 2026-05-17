@@ -13,6 +13,14 @@ export interface FixtureServer {
   lastCrawlRequest: () => unknown;
 }
 
+function headerValue(value: string | string[] | undefined): string {
+  if (Array.isArray(value)) {
+    return value.join(',');
+  }
+
+  return value || '';
+}
+
 function send(
   response: ServerResponse,
   statusCode: number,
@@ -97,6 +105,23 @@ export async function startFixtureServer(): Promise<FixtureServer> {
         return;
       }
 
+      if (pathname === '/vary') {
+        const variant = headerValue(request.headers['x-fixture-variant']);
+        const userAgent = headerValue(request.headers['user-agent']);
+
+        send(
+          response,
+          200,
+          { 'Content-Type': 'text/html; charset=utf-8' },
+          baseHtml(
+            'Vary Page',
+            `<p id="variant">${variant || 'none'}</p>
+<p id="user-agent">${userAgent}</p>`,
+          ),
+        );
+        return;
+      }
+
       if (pathname === '/tree') {
         send(
           response,
@@ -111,6 +136,20 @@ export async function startFixtureServer(): Promise<FixtureServer> {
         return;
       }
 
+      if (pathname === '/custom-tree') {
+        send(
+          response,
+          200,
+          { 'Content-Type': 'text/html; charset=utf-8' },
+          baseHtml(
+            'Custom Tree Page',
+            `<span class="custom-expander" onclick="document.getElementById('custom-hidden').innerHTML = '<a href=&quot;/custom-tree/file.pdf&quot; title=&quot;Custom hidden file&quot;>Custom PDF</a>';">Open custom folder</span>
+<div id="custom-hidden"></div>`,
+          ),
+        );
+        return;
+      }
+
       if (pathname === '/download/file.pdf' || pathname === '/tree/file.pdf') {
         send(
           response,
@@ -120,6 +159,19 @@ export async function startFixtureServer(): Promise<FixtureServer> {
             'Content-Disposition': 'attachment; filename="file.pdf"',
           },
           new Uint8Array([0x25, 0x50, 0x44, 0x46, 0x2d, 0x31, 0x2e, 0x34]),
+        );
+        return;
+      }
+
+      if (pathname === '/custom-tree/file.pdf') {
+        send(
+          response,
+          200,
+          {
+            'Content-Type': 'application/pdf',
+            'Content-Disposition': 'attachment; filename="custom-file.pdf"',
+          },
+          new Uint8Array([0x25, 0x50, 0x44, 0x46]),
         );
         return;
       }
@@ -153,10 +205,25 @@ export async function startFixtureServer(): Promise<FixtureServer> {
 
       if (pathname === '/crawl' && request.method === 'POST') {
         const body = await readRequestBody(request);
-        const payload = JSON.parse(body || '{}') as { urls?: string[] };
+        const payload = JSON.parse(body || '{}') as {
+          urls?: string[];
+          browser_config?: {
+            headless?: boolean;
+            user_agent?: string;
+          };
+          crawler_config?: {
+            params?: {
+              wait_until?: string;
+            };
+          };
+        };
         lastCrawlRequest = payload;
         const targetUrl = payload.urls?.[0] || `${requestUrl.origin}/`;
         const targetOrigin = new URL(targetUrl).origin;
+        const crawlUserAgent = payload.browser_config?.user_agent || 'none';
+        const crawlHeadless = String(payload.browser_config?.headless);
+        const crawlWaitUntil =
+          payload.crawler_config?.params?.wait_until || 'unset';
 
         send(
           response,
@@ -167,7 +234,10 @@ export async function startFixtureServer(): Promise<FixtureServer> {
             url: targetUrl,
             cleaned_html: baseHtml(
               'Crawl4ai Fixture',
-              '<a href="/relative" title="Crawl relative">Crawl Relative</a>',
+              `<p id="crawl-user-agent">${crawlUserAgent}</p>
+<p id="crawl-headless">${crawlHeadless}</p>
+<p id="crawl-wait-until">${crawlWaitUntil}</p>
+<a href="/relative" title="Crawl relative">Crawl Relative</a>`,
             ),
             markdown: '# Crawl4ai Fixture',
             links: {

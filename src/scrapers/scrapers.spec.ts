@@ -212,6 +212,48 @@ describe('scrapers', () => {
     expect(afterSecond).toBe(afterFirst);
   }, 60000);
 
+  it('tree scraper varies cache entries by custom selectors', async () => {
+    const cacheDir = `${cachePrefix}-tree-selector-cache`;
+    const defaultScraper = await getScraper({
+      scraper: 'tree',
+      headless: true,
+      maxIterations: 1,
+      clickDelay: 0,
+      rateLimit: 0,
+      cacheDir,
+    });
+    const customScraper = await getScraper({
+      scraper: 'tree',
+      headless: true,
+      maxIterations: 1,
+      clickDelay: 0,
+      rateLimit: 0,
+      customSelectors: ['.custom-expander'],
+      cacheDir,
+    });
+
+    const defaultResult = await defaultScraper.scrape(server.url('/custom-tree'), {
+      cache: true,
+      cacheExpiry: 60000,
+    });
+    const customResult = await customScraper.scrape(server.url('/custom-tree'), {
+      cache: true,
+      cacheExpiry: 60000,
+    });
+
+    expect(defaultResult.links).not.toContainEqual(
+      expect.objectContaining({
+        href: server.url('/custom-tree/file.pdf'),
+      }),
+    );
+    expect(customResult.links).toContainEqual(
+      expect.objectContaining({
+        href: server.url('/custom-tree/file.pdf'),
+        title: 'Custom hidden file',
+      }),
+    );
+  }, 60000);
+
   it('tree scraper applies rate limiting delay', async () => {
     const rateLimit = 250;
     const scraper = await getScraper({

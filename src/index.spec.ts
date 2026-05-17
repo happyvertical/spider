@@ -118,6 +118,34 @@ describe('adapter parity', () => {
       expect(afterSecond).toBe(afterFirst);
     }, 60000);
 
+    if (adapter !== 'crawl4ai') {
+      it(`${adapter} varies cache entries by request headers`, async () => {
+        const spider = await getSpider({
+          ...optionsFor(adapter),
+          cacheDir: `${cachePrefix}-${adapter}-header-vary`,
+        });
+
+        const before = server.requests();
+        const page1 = await spider.fetch(server.url('/vary'), {
+          cache: true,
+          cacheExpiry: 60000,
+          headers: { 'x-fixture-variant': 'alpha' },
+        });
+        const afterFirst = server.requests();
+        const page2 = await spider.fetch(server.url('/vary'), {
+          cache: true,
+          cacheExpiry: 60000,
+          headers: { 'x-fixture-variant': 'beta' },
+        });
+        const afterSecond = server.requests();
+
+        expect(page1.content).toContain('alpha');
+        expect(page2.content).toContain('beta');
+        expect(afterFirst).toBeGreaterThan(before);
+        expect(afterSecond).toBeGreaterThan(afterFirst);
+      }, 60000);
+    }
+
     it(`${adapter} throws ValidationError for invalid URLs`, async () => {
       const spider = await getSpider(optionsFor(adapter));
 
@@ -172,5 +200,38 @@ describe('adapter parity', () => {
     await expect(spider.fetch(server.url('/'), { cache: false })).rejects.toThrow(
       /Cannot connect to crawl4ai server|Failed to fetch page via crawl4ai/,
     );
+  });
+
+  it('crawl4ai varies cache entries by server and browser config', async () => {
+    const cacheDir = `${cachePrefix}-crawl4ai-config-vary`;
+    const firstSpider = await getSpider({
+      adapter: 'crawl4ai',
+      baseUrl: server.origin,
+      cacheDir,
+      userAgent: 'FixtureBot/alpha',
+    });
+    const secondSpider = await getSpider({
+      adapter: 'crawl4ai',
+      baseUrl: server.origin,
+      cacheDir,
+      userAgent: 'FixtureBot/beta',
+    });
+
+    const before = server.requests();
+    const firstPage = await firstSpider.fetch(server.url('/'), {
+      cache: true,
+      cacheExpiry: 60000,
+    });
+    const afterFirst = server.requests();
+    const secondPage = await secondSpider.fetch(server.url('/'), {
+      cache: true,
+      cacheExpiry: 60000,
+    });
+    const afterSecond = server.requests();
+
+    expect(firstPage.content).toContain('FixtureBot/alpha');
+    expect(secondPage.content).toContain('FixtureBot/beta');
+    expect(afterFirst).toBeGreaterThan(before);
+    expect(afterSecond).toBeGreaterThan(afterFirst);
   });
 });

@@ -1,5 +1,6 @@
 import type { CacheAdapter } from '@happyvertical/cache';
 import { getCache } from '@happyvertical/cache';
+import { createHash } from 'node:crypto';
 import type { CacheProviderConfig } from './types';
 
 export class CacheManager {
@@ -47,14 +48,58 @@ export class CacheManager {
 export function createCacheKey(
   namespace: string,
   url: string,
-  parts: Array<string | number | boolean | undefined> = [],
+  parts: unknown[] = [],
 ): string {
-  const suffix = parts
-    .filter((part) => part !== undefined)
-    .map((part) => encodeURIComponent(String(part)))
-    .join(':');
+  const signatureParts = parts
+    .map(normalizeCacheKeyPart)
+    .filter((part) => part !== undefined);
+  const signature = stableStringify({ parts: signatureParts, url });
+  const digest = createHash('sha256').update(signature).digest('hex');
 
-  return [namespace, encodeURIComponent(url), suffix]
-    .filter((part) => part.length > 0)
-    .join(':');
+  return `${namespace}:${digest}`;
+}
+
+function normalizeCacheKeyPart(part: unknown): string | undefined {
+  if (part === undefined) {
+    return undefined;
+  }
+
+  return stableStringify(part);
+}
+
+function stableStringify(value: unknown): string {
+  if (value === undefined) {
+    return 'undefined';
+  }
+
+  if (value === null) {
+    return 'null';
+  }
+
+  if (
+    typeof value === 'string' ||
+    typeof value === 'number' ||
+    typeof value === 'boolean'
+  ) {
+    return JSON.stringify(value);
+  }
+
+  if (Array.isArray(value)) {
+    return `[${value.map((item) => stableStringify(item)).join(',')}]`;
+  }
+
+  if (typeof value === 'object') {
+    const entries = Object.entries(value as Record<string, unknown>)
+      .filter(([, entryValue]) => entryValue !== undefined)
+      .sort(([leftKey], [rightKey]) => leftKey.localeCompare(rightKey));
+
+    return `{${entries
+      .map(
+        ([entryKey, entryValue]) =>
+          `${JSON.stringify(entryKey)}:${stableStringify(entryValue)}`,
+      )
+      .join(',')}}`;
+  }
+
+  return JSON.stringify(String(value));
 }

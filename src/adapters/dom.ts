@@ -81,9 +81,22 @@ export class DomAdapter implements SpiderAdapter {
       throw new ValidationError('Invalid URL format', { url });
     }
 
+    const defaultHeaders = {
+      'User-Agent':
+        userAgent ||
+        'Mozilla/5.0 (compatible; HappyVertical Spider/2.0; +https://happyvertical.com/bot)',
+      Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+      'Accept-Language': 'en-US,en;q=0.5',
+      // Note: undici automatically handles gzip/deflate/br decompression
+      DNT: '1',
+      Connection: 'keep-alive',
+      'Upgrade-Insecure-Requests': '1',
+      ...headers,
+    };
+    const cacheKey = createCacheKey('dom', url, [defaultHeaders]);
+
     // Check cache if enabled
     if (cache) {
-      const cacheKey = createCacheKey('dom', url);
       const cached = await this.cacheManager.get<Page>(cacheKey);
 
       if (cached) {
@@ -93,20 +106,6 @@ export class DomAdapter implements SpiderAdapter {
 
     // Fetch the page
     try {
-      const defaultHeaders = {
-        'User-Agent':
-          userAgent ||
-          'Mozilla/5.0 (compatible; HappyVertical Spider/2.0; +https://happyvertical.com/bot)',
-        Accept:
-          'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-        'Accept-Language': 'en-US,en;q=0.5',
-        // Note: undici automatically handles gzip/deflate/br decompression
-        DNT: '1',
-        Connection: 'keep-alive',
-        'Upgrade-Insecure-Requests': '1',
-        ...headers,
-      };
-
       const response = await request(url, {
         method: 'GET',
         headers: defaultHeaders,
@@ -142,7 +141,6 @@ export class DomAdapter implements SpiderAdapter {
 
       // Cache the result if caching is enabled
       if (cache) {
-        const cacheKey = createCacheKey('dom', url);
         await this.cacheManager.set(cacheKey, page, cacheExpiry);
       }
 

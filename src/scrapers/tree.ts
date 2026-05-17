@@ -12,6 +12,10 @@ import type {
   TreeScraperOptions,
 } from '../shared/types';
 
+const DEFAULT_MAX_ITERATIONS = 10;
+const DEFAULT_CLICK_DELAY = 100;
+const DEFAULT_RATE_LIMIT = 1000;
+
 /**
  * Tree scraper - expand hierarchical tree structures to reveal hidden content
  *
@@ -64,8 +68,8 @@ export class TreeScraper implements Scraper {
 
   constructor(options: TreeScraperOptions) {
     this.options = {
-      maxIterations: 10,
-      clickDelay: 100,
+      maxIterations: DEFAULT_MAX_ITERATIONS,
+      clickDelay: DEFAULT_CLICK_DELAY,
       handleExclusive: true,
       headless: true,
       ...options,
@@ -84,16 +88,25 @@ export class TreeScraper implements Scraper {
   /**
    * Generate a cache key from a URL and scrape options
    *
-   * Cache key includes URL, maxIterations, and clickDelay to differentiate
-   * results with different expansion parameters.
+   * Cache key includes browser and expansion options that can change which
+   * hidden links are revealed.
    */
-  private getCacheKey(url: string, _options?: ScrapeOptions): string {
-    const maxIterations = this.options.maxIterations || 10;
-    const clickDelay = this.options.clickDelay || 100;
+  private getCacheKey(url: string, options?: ScrapeOptions): string {
+    const maxIterations =
+      this.options.maxIterations ?? DEFAULT_MAX_ITERATIONS;
+    const clickDelay = this.options.clickDelay ?? DEFAULT_CLICK_DELAY;
+    const rateLimit = this.options.rateLimit ?? DEFAULT_RATE_LIMIT;
+
     return createCacheKey('tree', url, [
       maxIterations,
       clickDelay,
+      rateLimit,
+      this.options.customSelectors,
+      this.options.handleExclusive,
       this.options.headless,
+      this.options.userAgent,
+      options?.headers,
+      options?.timeout,
       this.options.stealth,
       this.options.cloak?.humanize,
       this.options.cloak?.executablePath,
@@ -144,7 +157,7 @@ export class TreeScraper implements Scraper {
 
     for (
       let iteration = 0;
-      iteration < (this.options.maxIterations || 10);
+      iteration < (this.options.maxIterations ?? DEFAULT_MAX_ITERATIONS);
       iteration++
     ) {
       let clickedInIteration = 0;
@@ -201,7 +214,9 @@ export class TreeScraper implements Scraper {
             clickedInIteration++;
 
             // Wait for AJAX content to load - jqueryFileTree uses async loading
-            await page.waitForTimeout(this.options.clickDelay || 1000);
+            await page.waitForTimeout(
+              this.options.clickDelay ?? DEFAULT_CLICK_DELAY,
+            );
 
             // Extract links after each click (not just at the end)
             const newLinks = await this.extractCurrentLinks(page);
@@ -273,7 +288,9 @@ export class TreeScraper implements Scraper {
 
     // Rate limiting: delay before page load to be respectful to servers
     const rateLimit =
-      this.options.rateLimit !== undefined ? this.options.rateLimit : 1000; // Default 1000ms
+      this.options.rateLimit !== undefined
+        ? this.options.rateLimit
+        : DEFAULT_RATE_LIMIT;
     if (rateLimit > 0) {
       await new Promise((resolve) => setTimeout(resolve, rateLimit));
     }

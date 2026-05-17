@@ -38,6 +38,22 @@ export class CrawleeAdapter implements SpiderAdapter {
     this.cloak = options.cloak;
   }
 
+  private getCacheKey(
+    url: string,
+    headers: Record<string, string>,
+    effectiveUserAgent: string | undefined,
+  ): string {
+    return createCacheKey('crawlee', url, [
+      this.headless,
+      effectiveUserAgent,
+      headers,
+      this.stealth,
+      this.cloak?.humanize,
+      this.cloak?.executablePath,
+      this.cloak?.autoUpdate,
+    ]);
+  }
+
   /**
    * Expand navigation/accordion elements and extract all links from a page.
    *
@@ -169,14 +185,9 @@ export class CrawleeAdapter implements SpiderAdapter {
       throw new ValidationError('Invalid URL format', { url });
     }
 
+    const cacheKey = this.getCacheKey(url, headers, effectiveUserAgent);
+
     if (cache) {
-      const cacheKey = createCacheKey('crawlee', url, [
-        this.headless,
-        this.stealth,
-        this.cloak?.humanize,
-        this.cloak?.executablePath,
-        this.cloak?.autoUpdate,
-      ]);
       const cached = await this.cacheManager.get<Page>(cacheKey);
 
       if (cached) {
@@ -227,13 +238,6 @@ export class CrawleeAdapter implements SpiderAdapter {
       });
 
       if (cache) {
-        const cacheKey = createCacheKey('crawlee', url, [
-          this.headless,
-          this.stealth,
-          this.cloak?.humanize,
-          this.cloak?.executablePath,
-          this.cloak?.autoUpdate,
-        ]);
         await this.cacheManager.set(cacheKey, pageData, cacheExpiry);
       }
 

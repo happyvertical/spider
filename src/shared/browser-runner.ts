@@ -16,6 +16,8 @@ const CLOAK_IGNORE_DEFAULT_ARGS = [
   '--enable-unsafe-swiftshader',
 ];
 
+let cloakAutoUpdateEnvQueue: Promise<void> = Promise.resolve();
+
 export interface BrowserRunnerOptions<T> {
   url: string;
   cacheDir: string;
@@ -62,22 +64,34 @@ async function withCloakAutoUpdateEnv<T>(
   cloak: CloakBrowserOptions | undefined,
   callback: () => Promise<T>,
 ): Promise<T> {
-  if (cloak?.autoUpdate !== false) {
+  const autoUpdateAlreadyDisabled =
+    process.env.CLOAKBROWSER_AUTO_UPDATE?.toLowerCase() === 'false';
+
+  if (cloak?.autoUpdate !== false || autoUpdateAlreadyDisabled) {
     return callback();
   }
 
-  const previous = process.env.CLOAKBROWSER_AUTO_UPDATE;
-  process.env.CLOAKBROWSER_AUTO_UPDATE = 'false';
+  const run = cloakAutoUpdateEnvQueue.then(async () => {
+    const previous = process.env.CLOAKBROWSER_AUTO_UPDATE;
+    process.env.CLOAKBROWSER_AUTO_UPDATE = 'false';
 
-  try {
-    return await callback();
-  } finally {
-    if (previous === undefined) {
-      delete process.env.CLOAKBROWSER_AUTO_UPDATE;
-    } else {
-      process.env.CLOAKBROWSER_AUTO_UPDATE = previous;
+    try {
+      return await callback();
+    } finally {
+      if (previous === undefined) {
+        delete process.env.CLOAKBROWSER_AUTO_UPDATE;
+      } else {
+        process.env.CLOAKBROWSER_AUTO_UPDATE = previous;
+      }
     }
-  }
+  });
+
+  cloakAutoUpdateEnvQueue = run.then(
+    () => undefined,
+    () => undefined,
+  );
+
+  return run;
 }
 
 async function resolveLaunchOptions(options: {
@@ -97,18 +111,20 @@ async function resolveLaunchOptions(options: {
     };
   }
 
-  const cloakbrowser = await withCloakAutoUpdateEnv(options.cloak, () =>
-    importExternalPackage('cloakbrowser'),
+  const { executablePath, stealthArgs } = await withCloakAutoUpdateEnv(
+    options.cloak,
+    async () => {
+      const cloakbrowser = await importExternalPackage('cloakbrowser');
+      const executablePath =
+        options.cloak?.executablePath || (await cloakbrowser.ensureBinary());
+      const stealthArgs =
+        typeof cloakbrowser.getDefaultStealthArgs === 'function'
+          ? cloakbrowser.getDefaultStealthArgs()
+          : [];
+
+      return { executablePath, stealthArgs };
+    },
   );
-  const executablePath =
-    options.cloak?.executablePath ||
-    (await withCloakAutoUpdateEnv(options.cloak, () =>
-      cloakbrowser.ensureBinary(),
-    ));
-  const stealthArgs =
-    typeof cloakbrowser.getDefaultStealthArgs === 'function'
-      ? cloakbrowser.getDefaultStealthArgs()
-      : [];
 
   return {
     headless: options.headless,

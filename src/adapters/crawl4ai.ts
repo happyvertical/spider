@@ -152,6 +152,7 @@ export class Crawl4aiAdapter implements SpiderAdapter {
 
     // Use env var for base URL if provided
     const serverUrl = crawl4aiUrl || this.baseUrl;
+    const effectiveUserAgent = userAgent || this.userAgent;
 
     // Validate URL
     if (!url || typeof url !== 'string') {
@@ -164,9 +165,15 @@ export class Crawl4aiAdapter implements SpiderAdapter {
       throw new ValidationError('Invalid URL format', { url });
     }
 
+    const cacheKey = createCacheKey('crawl4ai', url, [
+      serverUrl,
+      this.headless,
+      effectiveUserAgent,
+      this.waitUntil,
+    ]);
+
     // Check cache if enabled
     if (cache) {
-      const cacheKey = createCacheKey('crawl4ai', url);
       const cached = await this.cacheManager.get<Page>(cacheKey);
 
       if (cached) {
@@ -180,9 +187,7 @@ export class Crawl4aiAdapter implements SpiderAdapter {
         urls: [url],
         browser_config: {
           headless: this.headless,
-          ...(userAgent || this.userAgent
-            ? { user_agent: userAgent || this.userAgent }
-            : {}),
+          ...(effectiveUserAgent ? { user_agent: effectiveUserAgent } : {}),
         },
         crawler_config: {
           type: 'CrawlerRunConfig',
@@ -250,7 +255,6 @@ export class Crawl4aiAdapter implements SpiderAdapter {
 
       // Cache the result if caching is enabled
       if (cache) {
-        const cacheKey = createCacheKey('crawl4ai', url);
         await this.cacheManager.set(cacheKey, page, cacheExpiry);
       }
 
