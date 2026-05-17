@@ -51,19 +51,16 @@ describe('Spider Environment Variable Configuration', () => {
       expect(spider.fetch).toBeDefined();
     });
 
-    it.skipIf(process.env.CI === 'true')(
-      'should handle custom user agent in crawlee adapter',
-      async () => {
-        process.env.HAVE_SPIDER_USER_AGENT = 'CustomBot/2.0';
+    it('should handle custom user agent in crawlee adapter', async () => {
+      process.env.HAVE_SPIDER_USER_AGENT = 'CustomBot/2.0';
 
-        const spider = await getSpider({
-          adapter: 'crawlee',
-          headless: true,
-        });
+      const spider = await getSpider({
+        adapter: 'crawlee',
+        headless: true,
+      });
 
-        expect(spider).toBeDefined();
-      },
-    );
+      expect(spider).toBeDefined();
+    });
   });
 
   describe('HAVE_SPIDER_MAX_REQUESTS', () => {

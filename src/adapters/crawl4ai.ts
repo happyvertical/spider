@@ -1,15 +1,13 @@
-import type { CacheAdapter } from '@happyvertical/cache';
-import { getCache } from '@happyvertical/cache';
 import {
   isUrl,
   loadEnvConfig,
   NetworkError,
   ValidationError,
 } from '@happyvertical/utils';
-import * as cheerio from 'cheerio';
 import { request } from 'undici';
+import { CacheManager, createCacheKey } from '../shared/cache';
+import { extractHtmlLinks, resolveHref } from '../shared/links';
 import type {
-  CacheProviderConfig,
   Crawl4aiAdapterOptions,
   FetchOptions,
   Link,
@@ -39,51 +37,21 @@ interface Crawl4aiResponse {
  * Connects to a crawl4ai instance running on Kubernetes or Docker
  */
 export class Crawl4aiAdapter implements SpiderAdapter {
-  private cache?: CacheAdapter;
-  private cacheDir: string;
-  private cacheProviderConfig?: CacheProviderConfig;
+  private cacheManager: CacheManager;
   private baseUrl: string;
   private headless: boolean;
   private userAgent?: string;
   private waitUntil: 'load' | 'domcontentloaded' | 'networkidle';
 
   constructor(options: Crawl4aiAdapterOptions) {
-    this.cacheDir = options.cacheDir || '.cache/spider';
-    this.cacheProviderConfig = options.cacheProvider;
+    this.cacheManager = new CacheManager(
+      options.cacheDir || '.cache/spider',
+      options.cacheProvider,
+    );
     this.baseUrl = options.baseUrl || 'http://localhost:11235';
     this.headless = options.headless ?? true;
     this.userAgent = options.userAgent;
     this.waitUntil = options.waitUntil || 'networkidle';
-  }
-
-  /**
-   * Initialize the cache adapter if needed
-   * Uses S3 if cacheProvider is configured, otherwise falls back to file
-   */
-  private async initCache(): Promise<CacheAdapter> {
-    if (!this.cache) {
-      if (this.cacheProviderConfig?.provider === 's3') {
-        this.cache = await getCache({
-          provider: 's3',
-          bucket: this.cacheProviderConfig.bucket!,
-          prefix: this.cacheProviderConfig.prefix || 'cache/',
-          region: this.cacheProviderConfig.region,
-        });
-      } else {
-        this.cache = await getCache({
-          provider: 'file',
-          cacheDir: this.cacheDir,
-        });
-      }
-    }
-    return this.cache;
-  }
-
-  /**
-   * Generate a cache key from a URL
-   */
-  private getCacheKey(url: string): string {
-    return `crawl4ai:${encodeURIComponent(url)}`;
   }
 
   /**
@@ -92,15 +60,23 @@ export class Crawl4aiAdapter implements SpiderAdapter {
   private extractLinks(
     response: Crawl4aiResponse,
     html: string,
+    baseUrl: string,
   ): Link[] {
     // If crawl4ai provided structured links, use them
     if (response.links) {
       const links: Link[] = [];
+      const seen = new Set<string>();
 
       for (const link of response.links.internal || []) {
         if (link.href) {
+          const href = resolveHref(link.href, baseUrl);
+          if (seen.has(href)) {
+            continue;
+          }
+
+          seen.add(href);
           links.push({
-            href: link.href,
+            href,
             text: link.text?.trim() || '',
             title: link.title,
           });
@@ -109,8 +85,14 @@ export class Crawl4aiAdapter implements SpiderAdapter {
 
       for (const link of response.links.external || []) {
         if (link.href) {
+          const href = resolveHref(link.href, baseUrl);
+          if (seen.has(href)) {
+            continue;
+          }
+
+          seen.add(href);
           links.push({
-            href: link.href,
+            href,
             text: link.text?.trim() || '',
             title: link.title,
           });
@@ -123,36 +105,7 @@ export class Crawl4aiAdapter implements SpiderAdapter {
     }
 
     // Fallback to cheerio extraction
-    return this.extractLinksFromHtml(html);
-  }
-
-  /**
-   * Extract links from HTML using cheerio (fallback)
-   */
-  private extractLinksFromHtml(html: string): Link[] {
-    const $ = cheerio.load(html);
-    const links: Link[] = [];
-
-    $('a').each((_, element) => {
-      const $link = $(element);
-      const href = $link.attr('href');
-      if (href) {
-        const classes = $link.attr('class');
-        links.push({
-          href,
-          text: $link.text().trim() || '',
-          title: $link.attr('title'),
-          ariaLabel: $link.attr('aria-label'),
-          rel: $link.attr('rel'),
-          target: $link.attr('target'),
-          classes: classes
-            ? classes.split(' ').filter((c) => c.trim())
-            : undefined,
-        });
-      }
-    });
-
-    return links;
+    return extractHtmlLinks(html, baseUrl);
   }
 
   /**
@@ -213,9 +166,8 @@ export class Crawl4aiAdapter implements SpiderAdapter {
 
     // Check cache if enabled
     if (cache) {
-      const cacheAdapter = await this.initCache();
-      const cacheKey = this.getCacheKey(url);
-      const cached = await cacheAdapter.get<Page>(cacheKey);
+      const cacheKey = createCacheKey('crawl4ai', url);
+      const cached = await this.cacheManager.get<Page>(cacheKey);
 
       if (cached) {
         return cached;
@@ -284,11 +236,12 @@ export class Crawl4aiAdapter implements SpiderAdapter {
 
       // Get HTML content (prefer cleaned_html, fallback to html)
       const content = crawl4aiResult.cleaned_html || crawl4aiResult.html || '';
-      const links = this.extractLinks(crawl4aiResult, content);
+      const finalUrl = crawl4aiResult.url || url;
+      const links = this.extractLinks(crawl4aiResult, content, finalUrl);
       const markdown = this.extractMarkdown(crawl4aiResult);
 
       const page: Page = {
-        url: crawl4aiResult.url || url,
+        url: finalUrl,
         content,
         links,
         raw: crawl4aiResult,
@@ -297,10 +250,8 @@ export class Crawl4aiAdapter implements SpiderAdapter {
 
       // Cache the result if caching is enabled
       if (cache) {
-        const cacheAdapter = await this.initCache();
-        const cacheKey = this.getCacheKey(url);
-        const ttl = Math.floor(cacheExpiry / 1000); // Convert to seconds
-        await cacheAdapter.set(cacheKey, page, ttl);
+        const cacheKey = createCacheKey('crawl4ai', url);
+        await this.cacheManager.set(cacheKey, page, cacheExpiry);
       }
 
       return page;
