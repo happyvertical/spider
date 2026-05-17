@@ -18,16 +18,19 @@ The `@happyvertical/spider` package provides a standardized interface for fetchi
 - **Simple**: Fast HTTP requests with cheerio parsing (best for static content)
 - **DOM**: HTML processing with happy-dom for complex pages
 - **Crawlee**: Full browser automation with Playwright (best for dynamic/JavaScript-heavy content)
+- **Crawl4ai**: Remote crawl4ai service adapter for hosted browser extraction
 
-All adapters implement the same `ISpiderAdapter` interface and return a standardized `Page` object, making it easy to switch between adapters based on your needs.
+All adapters implement the same `SpiderAdapter` interface and return a standardized `Page` object, making it easy to switch between adapters based on your needs.
 
 ## Features
 
 - **Provider Pattern**: Choose the right adapter for your use case
-- **Standardized Interface**: All adapters implement `ISpiderAdapter`
+- **Standardized Interface**: All adapters implement `SpiderAdapter`
 - **Built-in Caching**: Automatic response caching with configurable expiry via `@happyvertical/cache`
 - **Navigation Expansion**: Crawlee adapter automatically clicks accordions/expandable elements to discover hidden links
-- **Link Extraction**: All adapters extract and return page links
+- **Link Extraction**: All adapters extract absolute links with consistent metadata
+- **Download Capture**: Browser-backed adapters expose downloads as `page.downloads`
+- **Optional Stealth Runtime**: CloakBrowser can be used as an opt-in external runtime; it is never bundled or enabled by default
 - **Error Handling**: Comprehensive error types (`ValidationError`, `NetworkError`)
 - **TypeScript Support**: Full type definitions for all APIs
 
@@ -42,6 +45,12 @@ npm install @happyvertical/spider
 
 # Or with bun
 bun add @happyvertical/spider
+```
+
+Optional CloakBrowser support is external. Install it only in environments where you choose to enable `stealth: true` and where you are responsible for the binary/license posture:
+
+```bash
+pnpm add cloakbrowser playwright-core
 ```
 
 ## Quick Start
@@ -142,29 +151,55 @@ const page = await spider.fetch('https://example.com/dynamic', {
 - Handles `[aria-expanded="false"]`, `.accordion-*`, `<summary>`, etc.
 - Runs up to 3 expansion iterations to discover hidden content
 
+### Optional CloakBrowser Runtime
+
+CloakBrowser is an explicit opt-in runtime provider for browser-backed paths. `@happyvertical/spider` does not bundle, install, predownload, or enable CloakBrowser by default.
+
+```typescript
+const spider = await getSpider({
+  adapter: 'crawlee',
+  stealth: true,
+  cloak: {
+    humanize: true,
+    executablePath: process.env.CLOAKBROWSER_BINARY_PATH,
+    autoUpdate: false,
+  },
+});
+```
+
+When `stealth: true` is set, `spider` dynamically imports `cloakbrowser`. If it is not installed, the adapter throws a setup error telling the caller to install the optional peer dependency. The runtime respects `CLOAKBROWSER_BINARY_PATH`, `CLOAKBROWSER_CACHE_DIR`, and `CLOAKBROWSER_AUTO_UPDATE`.
+
+Recommended deployment defaults:
+- Set `CLOAKBROWSER_AUTO_UPDATE=false` in CI and containers.
+- Preinstall or mount the CloakBrowser binary only in user-owned or internal environments.
+- Treat CloakBrowser binary-license compliance as the caller's responsibility.
+- Use stealth only for authorized scraping where you have permission and are respecting target-site terms, rate limits, and robots policies.
+
 ## API Reference
 
 ### Factory Function
 
-#### `getSpider(options: SpiderAdapterOptions): Promise<ISpiderAdapter>`
+#### `getSpider(options: SpiderAdapterOptions): Promise<SpiderAdapter>`
 
 Creates a spider adapter instance based on the provided options.
 
 **Parameters:**
 - `options`: Configuration object with discriminated union type
-  - `adapter`: `'simple' | 'dom' | 'crawlee'` (required)
+  - `adapter`: `'simple' | 'dom' | 'crawlee' | 'crawl4ai'` (required)
   - `cacheDir`: Custom cache directory (optional, default: `.cache/spider`)
   - `headless`: Browser headless mode - Crawlee only (optional, default: `true`)
   - `userAgent`: Custom user agent - Crawlee only (optional)
+  - `stealth`: Enable optional CloakBrowser runtime - Crawlee only (optional, default: `false`)
+  - `cloak`: CloakBrowser runtime settings - Crawlee only (optional)
 
-**Returns:** Promise resolving to `ISpiderAdapter` instance
+**Returns:** Promise resolving to `SpiderAdapter` instance
 
 ### Adapter Interface
 
-All adapters implement the `ISpiderAdapter` interface:
+All adapters implement the `SpiderAdapter` interface:
 
 ```typescript
-interface ISpiderAdapter {
+interface SpiderAdapter {
   fetch(url: string, options?: FetchOptions): Promise<Page>;
 }
 ```
@@ -236,10 +271,12 @@ All adapters return a standardized `Page` object:
 
 ```typescript
 interface Page {
-  url: string;      // Final URL after redirects
-  content: string;  // Full HTML content
-  links: string[];  // Extracted links from page
-  raw: any;         // Adapter-specific raw response data
+  url: string;              // Final URL after redirects
+  content: string;          // Full HTML content
+  links: Link[];            // Extracted absolute links with metadata
+  raw: any;                 // Adapter-specific raw response data
+  markdown?: string;        // Provided by crawl4ai when available
+  downloads?: DownloadInfo[]; // Browser-triggered downloads
 }
 ```
 
@@ -291,11 +328,11 @@ const page = await spider.fetch(
 
 // Filter PDF links
 const pdfLinks = page.links.filter(link =>
-  link.toLowerCase().endsWith('.pdf')
+  link.href.toLowerCase().endsWith('.pdf')
 );
 
 console.log(`Found ${pdfLinks.length} PDF documents`);
-pdfLinks.forEach(link => console.log(link));
+pdfLinks.forEach(link => console.log(link.href));
 ```
 
 **Results from Bentley Town integration test:**
@@ -418,6 +455,30 @@ All adapters use `@happyvertical/cache` with file-based storage:
 | **DOM** | Medium | Medium | Moderate | Normalized HTML |
 | **Crawlee** | High | High | Moderate | Accuracy over speed |
 
+## Document Scraping
+
+`scrapeDocument` supports only two scraper strategies: `basic` and `tree`.
+
+```typescript
+import { scrapeDocument } from '@happyvertical/spider';
+
+// Default: basic scraper with the DOM spider
+await scrapeDocument('https://example.com/article');
+
+// Browser-backed basic fetch
+await scrapeDocument('https://example.com/dynamic-page', {
+  scraper: 'basic',
+  spider: 'crawlee',
+});
+
+// Tree/accordion expansion
+await scrapeDocument('https://example.com/meetings', {
+  scraper: 'tree',
+});
+```
+
+`scraper: 'crawlee'` is not a valid `scrapeDocument` option. Use `scraper: 'basic', spider: 'crawlee'` for a browser-backed fetch, or `scraper: 'tree'` for browser interaction.
+
 ## Best Practices
 
 ### Ethical Web Scraping
@@ -492,20 +553,21 @@ The spider package integrates seamlessly with other SDK packages:
 
 ### With @happyvertical/pdf
 
-Extract PDF links and download documents:
+Extract PDF links and hand them to your document pipeline:
 
 ```typescript
 import { getSpider } from '@happyvertical/spider';
-import { downloadFile } from '@happyvertical/files';
 
 const spider = await getSpider({ adapter: 'crawlee' });
 const page = await spider.fetch('https://example.com/documents');
 
-const pdfLinks = page.links.filter(link => link.endsWith('.pdf'));
+const pdfLinks = page.links
+  .map(link => link.href)
+  .filter(href => href.endsWith('.pdf'));
 
-// Download PDFs
+// Fetch or enqueue PDFs with your application-owned download pipeline
 for (const pdfUrl of pdfLinks) {
-  await downloadFile(pdfUrl, './downloads/');
+  console.log(pdfUrl);
 }
 ```
 
@@ -633,6 +695,10 @@ const page = await spider.fetch('https://example.com');
 - **crawlee** - Web scraping and browser automation framework
 - **playwright** - Browser automation library (Crawlee dependency)
 
+### Optional Peer Dependencies
+
+- **cloakbrowser** - External stealth Chromium runtime, loaded only when `stealth: true`
+
 ### Development Dependencies
 
 - **@types/cheerio** - TypeScript types for cheerio
@@ -649,15 +715,18 @@ npm test
 # Run tests in watch mode
 npm run test:watch
 
-# Run integration tests only
-npm test -- crawlee.integration
+# Run optional live integration tests
+RUN_OPTIONAL_TESTS=1 npm test
+
+# Run optional CloakBrowser tests
+RUN_CLOAKBROWSER_TESTS=1 npm test
 ```
 
 **Integration Test Coverage:**
-- ✅ Real-world PDF extraction (Bentley town council)
+- ✅ Local fixture coverage for adapter parity, cache behavior, downloads, and document detectors
 - ✅ Navigation expansion (accordions, dropdowns)
-- ✅ Caching performance (10x+ speedup verification)
-- ✅ Relative vs absolute link handling
+- ✅ Cache behavior
+- ✅ Absolute link handling
 - ✅ Error handling and timeouts
 
 ## License

@@ -9,7 +9,7 @@ The primary goal is to fetch a web page, parse its content, and extract relevant
 ## Core Concepts
 
 - **SpiderManager**: The main entry point and public interface of the package. It is initialized with a specific adapter and orchestrates the fetching and parsing of web content.
-- **Adapter**: An adapter that conforms to the `ISpiderAdapter` interface. Each adapter is responsible for communicating with a specific backend service (e.g., a simple HTTP client, a headless browser) and transforming the response into a standardized `Page` format.
+- **Adapter**: An adapter that conforms to the `SpiderAdapter` interface. Each adapter is responsible for communicating with a specific backend service (e.g., a simple HTTP client, a headless browser) and transforming the response into a standardized `Page` format.
 - **Page**: A standardized data structure representing a web page. It contains detailed information like the URL, content, and extracted links.
 - **Caching**: The package will use `@happyvertical/cache` to cache responses, reducing redundant fetches and improving performance.
 
@@ -27,8 +27,11 @@ interface Page {
   // The full HTML content of the page.
   content: string;
 
-  // An array of links extracted from the page.
-  links: string[];
+  // An array of absolute links extracted from the page with metadata.
+  links: Link[];
+
+  // Files downloaded during browser-backed navigation.
+  downloads?: DownloadInfo[];
 
   // The original, raw response from the adapter.
   // Useful for debugging or accessing adapter-specific data.
@@ -41,7 +44,7 @@ interface Page {
 All adapters must implement this interface.
 
 ```typescript
-interface ISpiderAdapter {
+interface SpiderAdapter {
   /**
    * Fetches a web page and returns a standardized Page object.
    * @param url The URL of the page to fetch.
@@ -72,12 +75,11 @@ The primary way to interact with this package is through the `getSpider` factory
 
 ### `getSpider(options)`
 
-This function returns a standardized Spider Adapter that conforms to the `ISpiderAdapter` interface, based on the provided options.
+This function returns a standardized Spider Adapter that conforms to the `SpiderAdapter` interface, based on the provided options.
 
 ```typescript
 // The interface of the returned adapter.
-// Note: This is structurally identical to the ISpiderAdapter interface.
-interface ISpiderAdapter {
+interface SpiderAdapter {
   fetch(url: string, options?: FetchOptions): Promise<Page>;
 }
 
@@ -94,10 +96,21 @@ type SpiderAdapterOptions =
     }
   | {
       adapter: 'crawlee';
-      // Crawlee-specific options can be added here
+      headless?: boolean;
+      userAgent?: string;
+      stealth?: boolean;
+      cloak?: {
+        humanize?: boolean;
+        executablePath?: string;
+        autoUpdate?: boolean;
+      };
+    }
+  | {
+      adapter: 'crawl4ai';
+      baseUrl?: string;
     };
 
-function getSpider(options: SpiderAdapterOptions): ISpiderAdapter;
+function getSpider(options: SpiderAdapterOptions): SpiderAdapter;
 ```
 
 ### Example Usage
@@ -130,12 +143,16 @@ crawlAndLogLinks('https://example.com');
 ## Dependencies
 
 - `@happyvertical/cache`
-- `@happyvertical/files`
 - `@happyvertical/utils`
 - `cheerio`
 - `happy-dom`
 - `crawlee`
+- `playwright`
 - `undici`
+
+## Optional Peer Dependencies
+
+- `cloakbrowser`: loaded dynamically only when `stealth: true` is set on a browser-backed path. The package does not bundle or preinstall the CloakBrowser binary; callers are responsible for installation, binary-license compliance, and authorized/respectful scraping.
 
 ## Future Work
 

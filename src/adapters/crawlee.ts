@@ -1,124 +1,100 @@
-import type { CacheAdapter } from '@happyvertical/cache';
-import { getCache } from '@happyvertical/cache';
 import {
   isUrl,
   loadEnvConfig,
   NetworkError,
   ValidationError,
 } from '@happyvertical/utils';
-import { Configuration, PlaywrightCrawler } from 'crawlee';
+import { runSinglePageWithBrowser } from '../shared/browser-runner';
+import { CacheManager, createCacheKey } from '../shared/cache';
+import { extractBrowserLinks } from '../shared/links';
 import type {
-  CacheProviderConfig,
+  CloakBrowserOptions,
   CrawleeAdapterOptions,
-  DownloadInfo,
   FetchOptions,
   Link,
   Page,
   SpiderAdapter,
 } from '../shared/types';
-import {
-  handlePlaywrightDownload,
-  isDownloadError,
-} from '../shared/download-utils';
 
 /**
- * Crawlee headless browser adapter for fetching web pages
- * Uses Playwright through Crawlee for full browser automation
+ * Crawlee headless browser adapter for fetching web pages.
+ * Browser setup, downloads, timeouts, and optional CloakBrowser runtime wiring
+ * are delegated to the shared browser runner.
  */
 export class CrawleeAdapter implements SpiderAdapter {
-  private cache?: CacheAdapter;
+  private cacheManager: CacheManager;
   private cacheDir: string;
-  private cacheProviderConfig?: CacheProviderConfig;
   private headless: boolean;
   private userAgent?: string;
+  private stealth?: boolean;
+  private cloak?: CloakBrowserOptions;
 
   constructor(options: CrawleeAdapterOptions) {
     this.cacheDir = options.cacheDir || '.cache/spider';
-    this.cacheProviderConfig = options.cacheProvider;
-    this.headless = options.headless !== false; // Default to true
+    this.cacheManager = new CacheManager(this.cacheDir, options.cacheProvider);
+    this.headless = options.headless !== false;
     this.userAgent = options.userAgent;
+    this.stealth = options.stealth;
+    this.cloak = options.cloak;
+  }
+
+  private getCacheKey(
+    url: string,
+    headers: Record<string, string>,
+    effectiveUserAgent: string | undefined,
+  ): string {
+    return createCacheKey('crawlee', url, [
+      this.headless,
+      effectiveUserAgent,
+      headers,
+      this.stealth,
+      this.cloak?.humanize,
+      this.cloak?.executablePath,
+      this.cloak?.autoUpdate,
+    ]);
   }
 
   /**
-   * Initialize the cache adapter if needed
-   * Uses S3 if cacheProvider is configured, otherwise falls back to file
-   */
-  private async initCache(): Promise<CacheAdapter> {
-    if (!this.cache) {
-      if (this.cacheProviderConfig?.provider === 's3') {
-        this.cache = await getCache({
-          provider: 's3',
-          bucket: this.cacheProviderConfig.bucket!,
-          prefix: this.cacheProviderConfig.prefix || 'cache/',
-          region: this.cacheProviderConfig.region,
-        });
-      } else {
-        this.cache = await getCache({
-          provider: 'file',
-          cacheDir: this.cacheDir,
-        });
-      }
-    }
-    return this.cache;
-  }
-
-  /**
-   * Generate a cache key from a URL
-   */
-  private getCacheKey(url: string): string {
-    return `crawlee:${encodeURIComponent(url)}`;
-  }
-
-  /**
-   * Expand all navigation/accordion elements and extract all links from a page
+   * Expand navigation/accordion elements and extract all links from a page.
    *
-   * This method is useful for pages with hidden content behind expandable elements.
-   * It will click through accordion buttons, expand menus, and collect all links with metadata.
-   *
-   * @param page - Playwright page instance
-   * @returns Array of extracted links with metadata
-   *
-   * @example
-   * ```typescript
-   * const spider = await getSpider({ adapter: 'crawlee' });
-   * const page = await browser.newPage();
-   * await page.goto('https://example.com');
-   * const links = await spider.extractLinks(page);
-   * ```
+   * This method is useful for pages with hidden content behind expandable
+   * elements. It preserves the public helper while relying on shared link
+   * normalization for the final extraction.
    */
   async extractLinks(page: any): Promise<Link[]> {
-    // This logic runs in the browser context to expand navigation and collect links with metadata
-    const allLinks = await page.evaluate(() => {
-      // Use Map to avoid duplicate hrefs while preserving link metadata
-      const linkMap = new Map<string, any>();
+    const expandedLinks = await page.evaluate(() => {
+      const linkMap = new Map<string, Link>();
       const clickedElements = new Set<Element>();
 
-      // Extract all current links with metadata
       const extractLinks = () => {
-        document.querySelectorAll('a[href]').forEach((a) => {
-          const link = a as HTMLAnchorElement;
+        document.querySelectorAll('a[href]').forEach((anchor) => {
+          const link = anchor as HTMLAnchorElement;
           const href = link.href;
 
-          // Only add if not already present (first occurrence wins)
-          if (!linkMap.has(href)) {
-            linkMap.set(href, {
-              href,
-              text: link.textContent?.trim() || '',
-              title: link.title || undefined,
-              ariaLabel: link.getAttribute('aria-label') || undefined,
-              rel: link.rel || undefined,
-              target: link.target || undefined,
-              classes: link.className
-                ? link.className.split(' ').filter((c) => c.trim())
-                : undefined,
-            });
+          if (linkMap.has(href)) {
+            return;
           }
+
+          const className =
+            typeof link.className === 'string' ? link.className : undefined;
+
+          linkMap.set(href, {
+            href,
+            text: link.textContent?.trim() || '',
+            title: link.title || undefined,
+            ariaLabel: link.getAttribute('aria-label') || undefined,
+            rel: link.rel || undefined,
+            target: link.target || undefined,
+            classes: className
+              ? className.split(/\s+/).filter((className) => className.trim())
+              : undefined,
+          });
         });
       };
 
-      // Click an element and wait for changes
       const clickAndWait = (element: Element) => {
         if (clickedElements.has(element)) return false;
+
         try {
           (element as HTMLElement).click();
           clickedElements.add(element);
@@ -128,14 +104,10 @@ export class CrawleeAdapter implements SpiderAdapter {
         }
       };
 
-      // Extract initial links
       extractLinks();
 
-      // Click expandable elements iteratively
       for (let iteration = 0; iteration < 3; iteration++) {
         let clickedCount = 0;
-
-        // Click semantic accordion elements
         const semanticSelectors = [
           'button[aria-expanded="false"]',
           '[role="button"][aria-expanded="false"]',
@@ -151,36 +123,39 @@ export class CrawleeAdapter implements SpiderAdapter {
           });
         }
 
-        // For hash links, only click if they're likely accordion triggers
-        // (short text, no external URL patterns)
         document.querySelectorAll('a[href="#"]').forEach((link) => {
           const text = link.textContent?.trim() || '';
-          // Skip if it looks like a skip link or has common nav patterns
           if (text.toLowerCase().includes('skip')) return;
           if (text.toLowerCase().includes('menu')) return;
-          if (text.length > 100) return; // Likely not an accordion trigger
+          if (text.length > 100) return;
 
           if (clickAndWait(link)) clickedCount++;
         });
 
-        // Extract links after this round of clicks
         extractLinks();
 
-        // Stop if nothing was clicked
         if (clickedCount === 0) break;
       }
 
       return Array.from(linkMap.values());
     });
 
-    return allLinks;
+    const finalLinks = await extractBrowserLinks(page);
+    const linksByHref = new Map<string, Link>();
+
+    for (const link of [...expandedLinks, ...finalLinks]) {
+      if (!linksByHref.has(link.href)) {
+        linksByHref.set(link.href, link);
+      }
+    }
+
+    return Array.from(linksByHref.values());
   }
 
   /**
-   * Fetches a web page using headless browser and returns a standardized Page object
+   * Fetches a web page using a headless browser and returns a standardized Page.
    */
   async fetch(url: string, options?: FetchOptions): Promise<Page> {
-    // Load configuration from environment variables and merge with user options
     const config = loadEnvConfig<FetchOptions>(options || {}, {
       packageName: 'spider',
       schema: {
@@ -194,14 +169,12 @@ export class CrawleeAdapter implements SpiderAdapter {
       headers = {},
       timeout = 30000,
       cache = true,
-      cacheExpiry = 300000, // 5 minutes default
+      cacheExpiry = 300000,
       userAgent: envUserAgent,
     } = config;
 
-    // Prefer user-provided userAgent from constructor, fallback to env var
     const effectiveUserAgent = this.userAgent || envUserAgent;
 
-    // Validate URL
     if (!url || typeof url !== 'string') {
       throw new ValidationError('URL is required and must be a string', {
         url,
@@ -212,189 +185,60 @@ export class CrawleeAdapter implements SpiderAdapter {
       throw new ValidationError('Invalid URL format', { url });
     }
 
-    // Check cache if enabled
+    const cacheKey = this.getCacheKey(url, headers, effectiveUserAgent);
+
     if (cache) {
-      const cacheAdapter = await this.initCache();
-      const cacheKey = this.getCacheKey(url);
-      const cached = await cacheAdapter.get<Page>(cacheKey);
+      const cached = await this.cacheManager.get<Page>(cacheKey);
 
       if (cached) {
         return cached;
       }
     }
 
-    // Fetch the page with Crawlee
-    let pageData: Page | null = null;
-    let fetchError: Error | null = null;
-    const downloads: DownloadInfo[] = [];
-
     try {
-      // Create a unique configuration for this crawler instance
-      // This prevents storage conflicts when multiple crawlers run concurrently
-      const crawlerConfig = new Configuration({
-        storageClientOptions: {
-          localDataDirectory: `${this.cacheDir}/crawlee-${Date.now()}-${Math.random().toString(36).substring(7)}`,
+      const pageData = await runSinglePageWithBrowser<Page>({
+        url,
+        cacheDir: this.cacheDir,
+        headless: this.headless,
+        timeout,
+        headers,
+        userAgent: effectiveUserAgent,
+        stealth: this.stealth,
+        cloak: this.cloak,
+        onPage: async ({ page, request, downloads, sleep }) => {
+          await page.waitForLoadState('networkidle', { timeout });
+          await sleep(500);
+
+          const links = await this.extractLinks(page);
+          const content = await page.content();
+          const finalUrl = page.url();
+
+          return {
+            url: finalUrl,
+            content,
+            links,
+            downloads: downloads.length > 0 ? downloads : undefined,
+            raw: {
+              requestUrl: request.url,
+              loadedUrl: finalUrl,
+            },
+          };
         },
-        persistStorage: false, // Don't persist storage between runs
+        onDownload: ({ request, downloads }) => ({
+          url: request.url,
+          content: '',
+          links: [],
+          downloads,
+          raw: {
+            requestUrl: request.url,
+            loadedUrl: request.url,
+            isDownload: true,
+          },
+        }),
       });
 
-      const crawler = new PlaywrightCrawler(
-        {
-          headless: this.headless,
-          launchContext: {
-            launchOptions: {
-              headless: this.headless,
-              // Prevent macOS keychain password prompts
-              args: ['--use-mock-keychain'],
-            },
-          },
-          // Enable downloads so we can handle Content-Disposition: attachment URLs
-          browserPoolOptions: {
-            postPageCreateHooks: [
-              async (page) => {
-                // Listen for download events BEFORE any navigation
-                page.on('download', async (download) => {
-                  const info = await handlePlaywrightDownload(download);
-                  downloads.push(info);
-                });
-              },
-            ],
-          },
-          requestHandlerTimeoutSecs: Math.floor(timeout / 1000),
-          preNavigationHooks: [
-            async ({ page }) => {
-              // Set custom user agent if provided
-              if (effectiveUserAgent) {
-                await page.setExtraHTTPHeaders({
-                  'User-Agent': effectiveUserAgent,
-                });
-              }
-
-              // Set custom headers
-              if (Object.keys(headers).length > 0) {
-                await page.setExtraHTTPHeaders(headers);
-              }
-
-              // Set timeout
-              page.setDefaultNavigationTimeout(timeout);
-              page.setDefaultTimeout(timeout);
-            },
-          ],
-          requestHandler: async ({ page, request }) => {
-            try {
-              // Wait for page to be fully loaded including network requests
-              await page.waitForLoadState('networkidle', { timeout });
-
-              // Wait a bit for any initial animations
-              await page.waitForTimeout(500);
-
-              // Extract all links by expanding navigation elements
-              const links = await this.extractLinks(page);
-
-              // Get the final HTML content
-              const content = await page.content();
-
-              // Get the final URL after any redirects
-              const finalUrl = page.url();
-
-              pageData = {
-                url: finalUrl,
-                content,
-                links,
-                downloads: downloads.length > 0 ? downloads : undefined,
-                raw: {
-                  requestUrl: request.url,
-                  loadedUrl: finalUrl,
-                },
-              };
-            } catch (error) {
-              // Check if error is due to download starting - this is expected for download URLs
-              // Note: This relies on Playwright/Chromium error message format
-              const errorMessage =
-                error instanceof Error ? error.message : String(error);
-              if (isDownloadError(errorMessage)) {
-                // Download was triggered - wait for download handler to complete
-                await new Promise((resolve) => setTimeout(resolve, 2000));
-
-                if (downloads.length > 0) {
-                  // We have downloads - return them as the page data
-                  pageData = {
-                    url: request.url,
-                    content: '', // No HTML content for download URLs
-                    links: [],
-                    downloads,
-                    raw: {
-                      requestUrl: request.url,
-                      loadedUrl: request.url,
-                      isDownload: true,
-                    },
-                  };
-                  return;
-                }
-              }
-
-              fetchError =
-                error instanceof Error ? error : new Error(String(error));
-            }
-          },
-          failedRequestHandler: async ({ request }, error) => {
-            // Check if failure is due to download - not actually an error
-            // Note: This relies on Playwright/Chromium error message format
-            if (isDownloadError(error.message || '')) {
-              // Wait for download handler to complete
-              await new Promise((resolve) => setTimeout(resolve, 2000));
-
-              if (downloads.length > 0) {
-                pageData = {
-                  url: request.url,
-                  content: '',
-                  links: [],
-                  downloads,
-                  raw: {
-                    requestUrl: request.url,
-                    loadedUrl: request.url,
-                    isDownload: true,
-                  },
-                };
-                return;
-              }
-            }
-
-            fetchError = new NetworkError(
-              `Failed to crawl ${request.url}: ${error.message}`,
-              {
-                url: request.url,
-                error: error.message,
-              },
-            );
-          },
-        },
-        crawlerConfig,
-      );
-
-      // Run the crawler for this single URL
-      await crawler.run([url]);
-
-      // Always tear down the crawler to clean up resources
-      await crawler.teardown();
-
-      // Check if we got the page data
-      if (fetchError) {
-        throw fetchError;
-      }
-
-      if (!pageData) {
-        throw new NetworkError(`Failed to fetch page: No data returned`, {
-          url,
-        });
-      }
-
-      // Cache the result if caching is enabled
       if (cache) {
-        const cacheAdapter = await this.initCache();
-        const cacheKey = this.getCacheKey(url);
-        const ttl = Math.floor(cacheExpiry / 1000); // Convert to seconds
-        await cacheAdapter.set(cacheKey, pageData, ttl);
+        await this.cacheManager.set(cacheKey, pageData, cacheExpiry);
       }
 
       return pageData;

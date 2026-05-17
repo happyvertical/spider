@@ -48,6 +48,24 @@ export class BasicScraper implements Scraper {
       this.spider = await getSpider({
         adapter: spiderType,
         cacheDir: this.options.cacheDir,
+        cacheProvider: this.options.cacheProvider,
+        ...(spiderType === 'crawlee' || spiderType === 'crawl4ai'
+          ? {
+              headless: this.options.headless,
+              userAgent: this.options.userAgent,
+            }
+          : {}),
+        ...(spiderType === 'crawl4ai'
+          ? {
+              baseUrl: this.options.baseUrl,
+            }
+          : {}),
+        ...(spiderType === 'crawlee'
+          ? {
+              stealth: this.options.stealth,
+              cloak: this.options.cloak,
+            }
+          : {}),
       });
     }
     return this.spider;
@@ -114,6 +132,7 @@ export class BasicScraper implements Scraper {
         ...page.raw,
         downloads: page.downloads,
       },
+      downloads: page.downloads,
     };
   }
 }

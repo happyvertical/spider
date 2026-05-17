@@ -1,5 +1,3 @@
-import type { CacheAdapter } from '@happyvertical/cache';
-import { getCache } from '@happyvertical/cache';
 import {
   getLogger,
   isUrl,
@@ -7,14 +5,13 @@ import {
   NetworkError,
   ValidationError,
 } from '@happyvertical/utils';
-import * as cheerio from 'cheerio';
 import { Window } from 'happy-dom';
 import { request } from 'undici';
+import { CacheManager, createCacheKey } from '../shared/cache';
+import { extractHtmlLinks } from '../shared/links';
 import type {
-  CacheProviderConfig,
   DomAdapterOptions,
   FetchOptions,
-  Link,
   Page,
   SpiderAdapter,
 } from '../shared/types';
@@ -24,43 +21,13 @@ import type {
  * Uses happy-dom to process HTML and cheerio for parsing
  */
 export class DomAdapter implements SpiderAdapter {
-  private cache?: CacheAdapter;
-  private cacheDir: string;
-  private cacheProviderConfig?: CacheProviderConfig;
+  private cacheManager: CacheManager;
 
   constructor(options: DomAdapterOptions) {
-    this.cacheDir = options.cacheDir || '.cache/spider';
-    this.cacheProviderConfig = options.cacheProvider;
-  }
-
-  /**
-   * Initialize the cache adapter if needed
-   * Uses S3 if cacheProvider is configured, otherwise falls back to file
-   */
-  private async initCache(): Promise<CacheAdapter> {
-    if (!this.cache) {
-      if (this.cacheProviderConfig?.provider === 's3') {
-        this.cache = await getCache({
-          provider: 's3',
-          bucket: this.cacheProviderConfig.bucket!,
-          prefix: this.cacheProviderConfig.prefix || 'cache/',
-          region: this.cacheProviderConfig.region,
-        });
-      } else {
-        this.cache = await getCache({
-          provider: 'file',
-          cacheDir: this.cacheDir,
-        });
-      }
-    }
-    return this.cache;
-  }
-
-  /**
-   * Generate a cache key from a URL
-   */
-  private getCacheKey(url: string): string {
-    return `dom:${encodeURIComponent(url)}`;
+    this.cacheManager = new CacheManager(
+      options.cacheDir || '.cache/spider',
+      options.cacheProvider,
+    );
   }
 
   /**
@@ -79,35 +46,6 @@ export class DomAdapter implements SpiderAdapter {
       });
       return html;
     }
-  }
-
-  /**
-   * Extract links from HTML using cheerio with metadata
-   */
-  private extractLinks(html: string): Link[] {
-    const $ = cheerio.load(html);
-    const links: Link[] = [];
-
-    $('a').each((_, element) => {
-      const $link = $(element);
-      const href = $link.attr('href');
-      if (href) {
-        const classes = $link.attr('class');
-        links.push({
-          href,
-          text: $link.text().trim() || '',
-          title: $link.attr('title'),
-          ariaLabel: $link.attr('aria-label'),
-          rel: $link.attr('rel'),
-          target: $link.attr('target'),
-          classes: classes
-            ? classes.split(' ').filter((c) => c.trim())
-            : undefined,
-        });
-      }
-    });
-
-    return links;
   }
 
   /**
@@ -143,11 +81,23 @@ export class DomAdapter implements SpiderAdapter {
       throw new ValidationError('Invalid URL format', { url });
     }
 
+    const defaultHeaders = {
+      'User-Agent':
+        userAgent ||
+        'Mozilla/5.0 (compatible; HappyVertical Spider/2.0; +https://happyvertical.com/bot)',
+      Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+      'Accept-Language': 'en-US,en;q=0.5',
+      // Note: undici automatically handles gzip/deflate/br decompression
+      DNT: '1',
+      Connection: 'keep-alive',
+      'Upgrade-Insecure-Requests': '1',
+      ...headers,
+    };
+    const cacheKey = createCacheKey('dom', url, [defaultHeaders]);
+
     // Check cache if enabled
     if (cache) {
-      const cacheAdapter = await this.initCache();
-      const cacheKey = this.getCacheKey(url);
-      const cached = await cacheAdapter.get<Page>(cacheKey);
+      const cached = await this.cacheManager.get<Page>(cacheKey);
 
       if (cached) {
         return cached;
@@ -156,20 +106,6 @@ export class DomAdapter implements SpiderAdapter {
 
     // Fetch the page
     try {
-      const defaultHeaders = {
-        'User-Agent':
-          userAgent ||
-          'Mozilla/5.0 (compatible; HappyVertical Spider/2.0; +https://happyvertical.com/bot)',
-        Accept:
-          'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-        'Accept-Language': 'en-US,en;q=0.5',
-        // Note: undici automatically handles gzip/deflate/br decompression
-        DNT: '1',
-        Connection: 'keep-alive',
-        'Upgrade-Insecure-Requests': '1',
-        ...headers,
-      };
-
       const response = await request(url, {
         method: 'GET',
         headers: defaultHeaders,
@@ -190,7 +126,7 @@ export class DomAdapter implements SpiderAdapter {
       const processedContent = this.processHtml(rawContent);
 
       // Extract links from processed content
-      const links = this.extractLinks(processedContent);
+      const links = extractHtmlLinks(processedContent, url);
 
       const page: Page = {
         url,
@@ -205,10 +141,7 @@ export class DomAdapter implements SpiderAdapter {
 
       // Cache the result if caching is enabled
       if (cache) {
-        const cacheAdapter = await this.initCache();
-        const cacheKey = this.getCacheKey(url);
-        const ttl = Math.floor(cacheExpiry / 1000); // Convert to seconds
-        await cacheAdapter.set(cacheKey, page, ttl);
+        await this.cacheManager.set(cacheKey, page, cacheExpiry);
       }
 
       return page;

@@ -1,9 +1,7 @@
-import type { CacheAdapter } from '@happyvertical/cache';
-import { getCache } from '@happyvertical/cache';
-import { Configuration, PlaywrightCrawler } from 'crawlee';
+import { runSinglePageWithBrowser } from '../shared/browser-runner';
+import { CacheManager, createCacheKey } from '../shared/cache';
+import { extractBrowserLinks } from '../shared/links';
 import type {
-  CacheProviderConfig,
-  DownloadInfo,
   Link,
   ScrapeMetrics,
   ScrapeOptions,
@@ -13,10 +11,10 @@ import type {
   ScraperType,
   TreeScraperOptions,
 } from '../shared/types';
-import {
-  handlePlaywrightDownload,
-  isDownloadError,
-} from '../shared/download-utils';
+
+const DEFAULT_MAX_ITERATIONS = 10;
+const DEFAULT_CLICK_DELAY = 100;
+const DEFAULT_RATE_LIMIT = 1000;
 
 /**
  * Tree scraper - expand hierarchical tree structures to reveal hidden content
@@ -46,8 +44,7 @@ import {
 export class TreeScraper implements Scraper {
   private options: TreeScraperOptions;
   private cacheDir: string;
-  private cacheProviderConfig?: CacheProviderConfig;
-  private cache?: CacheAdapter;
+  private cacheManager: CacheManager;
 
   // Default tree/expandable element selectors
   // Ordered from most specific (tree structures) to most generic (buttons)
@@ -71,14 +68,14 @@ export class TreeScraper implements Scraper {
 
   constructor(options: TreeScraperOptions) {
     this.options = {
-      maxIterations: 10,
-      clickDelay: 100,
+      maxIterations: DEFAULT_MAX_ITERATIONS,
+      clickDelay: DEFAULT_CLICK_DELAY,
       handleExclusive: true,
       headless: true,
       ...options,
     };
     this.cacheDir = options.cacheDir || '.cache/spider';
-    this.cacheProviderConfig = options.cacheProvider;
+    this.cacheManager = new CacheManager(this.cacheDir, options.cacheProvider);
   }
 
   /**
@@ -89,65 +86,39 @@ export class TreeScraper implements Scraper {
   }
 
   /**
-   * Initialize the cache adapter if needed
-   * Uses S3 if cacheProvider is configured, otherwise falls back to file
-   */
-  private async initCache(): Promise<CacheAdapter> {
-    if (!this.cache) {
-      if (this.cacheProviderConfig?.provider === 's3') {
-        this.cache = await getCache({
-          provider: 's3',
-          bucket: this.cacheProviderConfig.bucket!,
-          prefix: this.cacheProviderConfig.prefix || 'cache/',
-          region: this.cacheProviderConfig.region,
-        });
-      } else {
-        this.cache = await getCache({
-          provider: 'file',
-          cacheDir: this.cacheDir,
-        });
-      }
-    }
-    return this.cache;
-  }
-
-  /**
    * Generate a cache key from a URL and scrape options
    *
-   * Cache key includes URL, maxIterations, and clickDelay to differentiate
-   * results with different expansion parameters.
+   * Cache key includes browser and expansion options that can change which
+   * hidden links are revealed.
    */
-  private getCacheKey(url: string, _options?: ScrapeOptions): string {
-    const maxIterations = this.options.maxIterations || 10;
-    const clickDelay = this.options.clickDelay || 100;
-    return `tree:${encodeURIComponent(url)}:${maxIterations}:${clickDelay}`;
+  private getCacheKey(url: string, options?: ScrapeOptions): string {
+    const maxIterations =
+      this.options.maxIterations ?? DEFAULT_MAX_ITERATIONS;
+    const clickDelay = this.options.clickDelay ?? DEFAULT_CLICK_DELAY;
+    const rateLimit = this.options.rateLimit ?? DEFAULT_RATE_LIMIT;
+
+    return createCacheKey('tree', url, [
+      maxIterations,
+      clickDelay,
+      rateLimit,
+      this.options.customSelectors,
+      this.options.handleExclusive,
+      this.options.headless,
+      this.options.userAgent,
+      options?.headers,
+      options?.timeout,
+      this.options.stealth,
+      this.options.cloak?.humanize,
+      this.options.cloak?.executablePath,
+      this.options.cloak?.autoUpdate,
+    ]);
   }
 
   /**
    * Extract all links from the current page state
    */
   private async extractCurrentLinks(page: any): Promise<Link[]> {
-    return page.evaluate(() => {
-      const linkMap = new Map<string, any>();
-      document.querySelectorAll('a[href]').forEach((a) => {
-        const link = a as HTMLAnchorElement;
-        const href = link.href;
-        if (!linkMap.has(href)) {
-          linkMap.set(href, {
-            href,
-            text: link.textContent?.trim() || '',
-            title: link.title || undefined,
-            ariaLabel: link.getAttribute('aria-label') || undefined,
-            rel: link.rel || undefined,
-            target: link.target || undefined,
-            classes: link.className
-              ? link.className.split(' ').filter((c) => c.trim())
-              : undefined,
-          });
-        }
-      });
-      return Array.from(linkMap.values());
-    });
+    return extractBrowserLinks(page);
   }
 
   /**
@@ -186,7 +157,7 @@ export class TreeScraper implements Scraper {
 
     for (
       let iteration = 0;
-      iteration < (this.options.maxIterations || 10);
+      iteration < (this.options.maxIterations ?? DEFAULT_MAX_ITERATIONS);
       iteration++
     ) {
       let clickedInIteration = 0;
@@ -243,7 +214,9 @@ export class TreeScraper implements Scraper {
             clickedInIteration++;
 
             // Wait for AJAX content to load - jqueryFileTree uses async loading
-            await page.waitForTimeout(this.options.clickDelay || 1000);
+            await page.waitForTimeout(
+              this.options.clickDelay ?? DEFAULT_CLICK_DELAY,
+            );
 
             // Extract links after each click (not just at the end)
             const newLinks = await this.extractCurrentLinks(page);
@@ -305,9 +278,8 @@ export class TreeScraper implements Scraper {
 
     // Check cache if enabled
     if (cache) {
-      const cacheAdapter = await this.initCache();
       const cacheKey = this.getCacheKey(url, options);
-      const cached = await cacheAdapter.get<ScrapeResult>(cacheKey);
+      const cached = await this.cacheManager.get<ScrapeResult>(cacheKey);
 
       if (cached) {
         return cached;
@@ -316,239 +288,106 @@ export class TreeScraper implements Scraper {
 
     // Rate limiting: delay before page load to be respectful to servers
     const rateLimit =
-      this.options.rateLimit !== undefined ? this.options.rateLimit : 1000; // Default 1000ms
+      this.options.rateLimit !== undefined
+        ? this.options.rateLimit
+        : DEFAULT_RATE_LIMIT;
     if (rateLimit > 0) {
       await new Promise((resolve) => setTimeout(resolve, rateLimit));
     }
 
-    let scrapeResult: ScrapeResult | null = null;
-    let scrapeError: Error | null = null;
-    const downloads: DownloadInfo[] = [];
-
     try {
-      // Create a unique configuration for this crawler instance
-      const crawlerConfig = new Configuration({
-        storageClientOptions: {
-          localDataDirectory: `${this.cacheDir}/crawlee-${Date.now()}-${Math.random().toString(36).substring(7)}`,
-        },
-        persistStorage: false, // Don't persist storage between runs
-      });
+      const scrapeResult = await runSinglePageWithBrowser<ScrapeResult>({
+        url,
+        cacheDir: this.cacheDir,
+        headless: this.options.headless !== false,
+        timeout,
+        headers: options?.headers,
+        userAgent:
+          this.options.userAgent ||
+          'Mozilla/5.0 (compatible; HappyVertical Spider/2.0; +https://happyvertical.com/bot)',
+        containerSafe: true,
+        stealth: this.options.stealth,
+        cloak: this.options.cloak,
+        onPage: async ({ page, request, downloads, sleep }) => {
+          await page.waitForLoadState('networkidle', { timeout });
+          await sleep(1000);
 
-      const crawler = new PlaywrightCrawler(
-        {
-          headless: this.options.headless,
-          launchContext: {
-            launchOptions: {
+          const { links, interactionCount } =
+            await this.extractLinksWithTreeExpansion(page);
+          const content = await page.content();
+          const duration = Date.now() - startTime;
+
+          const strategy: ScraperStrategy = {
+            type: this.getType(),
+            spider: 'crawlee',
+            config: {
+              maxIterations: this.options.maxIterations,
+              clickDelay: this.options.clickDelay,
+              customSelectors: this.options.customSelectors,
+              handleExclusive: this.options.handleExclusive,
               headless: this.options.headless,
-              // Browser args for reliable operation in containers and CI
-              args: [
-                '--use-mock-keychain', // Prevent macOS keychain password prompts
-                '--no-sandbox', // Required for running in containers/as root
-                '--disable-setuid-sandbox', // Disable setuid sandbox
-                '--disable-dev-shm-usage', // Use /tmp instead of /dev/shm (containers have limited shm)
-                '--disable-gpu', // Disable GPU (not available in headless containers)
-              ],
+              stealth: this.options.stealth,
+              cloak: this.options.cloak,
             },
-          },
-          // Enable downloads so we can handle Content-Disposition: attachment URLs
-          browserPoolOptions: {
-            postPageCreateHooks: [
-              async (page) => {
-                // Listen for download events BEFORE any navigation
-                page.on('download', async (download) => {
-                  const info = await handlePlaywrightDownload(download);
-                  downloads.push(info);
-                });
-              },
-            ],
-          },
-          requestHandlerTimeoutSecs: Math.floor(timeout / 1000),
-          preNavigationHooks: [
-            async ({ page }) => {
-              // Set custom user agent if provided
-              if (this.options.userAgent) {
-                await page.setExtraHTTPHeaders({
-                  'User-Agent': this.options.userAgent,
-                });
-              } else {
-                await page.setExtraHTTPHeaders({
-                  'User-Agent':
-                    'Mozilla/5.0 (compatible; HappyVertical Spider/2.0; +https://happyvertical.com/bot)',
-                });
-              }
+            confidence: interactionCount > 0 ? 0.9 : 0.5,
+          };
 
-              // Set custom headers
-              if (options?.headers && Object.keys(options.headers).length > 0) {
-                await page.setExtraHTTPHeaders(options.headers);
-              }
+          const metrics: ScrapeMetrics = {
+            duration,
+            linkCount: links.length,
+            interactionCount,
+            complete: true,
+          };
 
-              // Set timeout
-              page.setDefaultNavigationTimeout(timeout);
-              page.setDefaultTimeout(timeout);
+          return {
+            url: page.url(),
+            content,
+            links,
+            strategy,
+            metrics,
+            downloads: downloads.length > 0 ? downloads : undefined,
+            raw: {
+              requestUrl: request.url,
+              loadedUrl: page.url(),
+              interactionCount,
+              downloads: downloads.length > 0 ? downloads : undefined,
             },
-          ],
-          requestHandler: async ({ page, request }) => {
-            try {
-              // Wait for page to load
-              await page.waitForLoadState('networkidle', { timeout });
-
-              // Wait for any initial animations and lazy-loaded content
-              await page.waitForTimeout(1000);
-
-              // Extract links with tree expansion
-              const { links, interactionCount } =
-                await this.extractLinksWithTreeExpansion(page);
-
-              // Get page content
-              const content = await page.content();
-
-              const duration = Date.now() - startTime;
-
-              // Build strategy information
-              const strategy: ScraperStrategy = {
-                type: this.getType(),
-                spider: 'crawlee',
-                config: {
-                  maxIterations: this.options.maxIterations,
-                  clickDelay: this.options.clickDelay,
-                  customSelectors: this.options.customSelectors,
-                  handleExclusive: this.options.handleExclusive,
-                  headless: this.options.headless,
-                },
-                confidence:
-                  interactionCount > 0
-                    ? 0.9 // High confidence if we found expandable tree nodes
-                    : 0.5, // Lower confidence if no tree structure found (might be wrong strategy)
-              };
-
-              // Build metrics
-              const metrics: ScrapeMetrics = {
-                duration,
-                linkCount: links.length,
-                interactionCount,
-                complete: true, // Tree scraper always completes
-              };
-
-              scrapeResult = {
-                url: page.url(),
-                content,
-                links,
-                strategy,
-                metrics,
-                raw: {
-                  requestUrl: request.url,
-                  loadedUrl: page.url(),
-                  interactionCount,
-                  downloads: downloads.length > 0 ? downloads : undefined,
-                },
-              };
-            } catch (error) {
-              // Check if error is due to download starting - this is expected for download URLs
-              // Note: This relies on Playwright/Chromium error message format
-              const errorMessage =
-                error instanceof Error ? error.message : String(error);
-              if (isDownloadError(errorMessage)) {
-                // Download was triggered - wait for download handler to complete
-                await new Promise((resolve) => setTimeout(resolve, 2000));
-
-                if (downloads.length > 0) {
-                  const duration = Date.now() - startTime;
-                  scrapeResult = {
-                    url: request.url,
-                    content: '',
-                    links: [],
-                    strategy: {
-                      type: this.getType(),
-                      spider: 'crawlee',
-                      config: {},
-                      confidence: 0.8,
-                    },
-                    metrics: {
-                      duration,
-                      linkCount: 0,
-                      interactionCount: 0,
-                      complete: true,
-                    },
-                    raw: {
-                      requestUrl: request.url,
-                      loadedUrl: request.url,
-                      isDownload: true,
-                      downloads,
-                    },
-                  };
-                  return;
-                }
-              }
-
-              scrapeError =
-                error instanceof Error ? error : new Error(String(error));
-            }
-          },
-          failedRequestHandler: async ({ request }, error) => {
-            // Check if failure is due to download - not actually an error
-            // Note: This relies on Playwright/Chromium error message format
-            if (isDownloadError(error.message || '')) {
-              // Wait for download handler to complete
-              await new Promise((resolve) => setTimeout(resolve, 2000));
-
-              if (downloads.length > 0) {
-                const duration = Date.now() - startTime;
-                scrapeResult = {
-                  url: request.url,
-                  content: '',
-                  links: [],
-                  strategy: {
-                    type: this.getType(),
-                    spider: 'crawlee',
-                    config: {},
-                    confidence: 0.8,
-                  },
-                  metrics: {
-                    duration,
-                    linkCount: 0,
-                    interactionCount: 0,
-                    complete: true,
-                  },
-                  raw: {
-                    requestUrl: request.url,
-                    loadedUrl: request.url,
-                    isDownload: true,
-                    downloads,
-                  },
-                };
-                return;
-              }
-            }
-
-            scrapeError = new Error(
-              `Failed to scrape ${request.url}: ${error.message}`,
-            );
-          },
+          };
         },
-        crawlerConfig,
-      );
+        onDownload: ({ request, downloads }) => {
+          const duration = Date.now() - startTime;
 
-      // Run the crawler for this single URL
-      await crawler.run([url]);
-
-      // Always tear down the crawler to clean up resources
-      await crawler.teardown();
-
-      // Check if we got the result
-      if (scrapeError) {
-        throw scrapeError;
-      }
-
-      if (!scrapeResult) {
-        throw new Error('Tree scrape failed - no result captured');
-      }
+          return {
+            url: request.url,
+            content: '',
+            links: [],
+            strategy: {
+              type: this.getType(),
+              spider: 'crawlee',
+              config: {},
+              confidence: 0.8,
+            },
+            metrics: {
+              duration,
+              linkCount: 0,
+              interactionCount: 0,
+              complete: true,
+            },
+            downloads,
+            raw: {
+              requestUrl: request.url,
+              loadedUrl: request.url,
+              isDownload: true,
+              downloads,
+            },
+          };
+        },
+      });
 
       // Cache the result if caching is enabled
       if (cache) {
-        const cacheAdapter = await this.initCache();
         const cacheKey = this.getCacheKey(url, options);
-        const ttl = Math.floor(cacheExpiry / 1000); // Convert to seconds
-        await cacheAdapter.set(cacheKey, scrapeResult, ttl);
+        await this.cacheManager.set(cacheKey, scrapeResult, cacheExpiry);
       }
 
       return scrapeResult;

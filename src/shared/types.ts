@@ -97,6 +97,22 @@ export interface Page {
 }
 
 /**
+ * Optional CloakBrowser runtime settings for browser-backed scraping.
+ * CloakBrowser is an external optional dependency and is only loaded when
+ * stealth mode is explicitly enabled.
+ */
+export interface CloakBrowserOptions {
+  /** Patch browser interactions to use human-like input timing and movement */
+  humanize?: boolean;
+
+  /** Use a caller-provided CloakBrowser Chromium binary path */
+  executablePath?: string;
+
+  /** Set to false to disable CloakBrowser's background auto-update check */
+  autoUpdate?: boolean;
+}
+
+/**
  * Options for fetch operations
  */
 export interface FetchOptions {
@@ -224,6 +240,15 @@ export interface CrawleeAdapterOptions {
    * Custom user agent string
    */
   userAgent?: string;
+
+  /**
+   * Use CloakBrowser's external stealth Chromium runtime.
+   * Requires callers to install the optional peer dependency `cloakbrowser`.
+   */
+  stealth?: boolean;
+
+  /** CloakBrowser runtime settings used when stealth is enabled */
+  cloak?: CloakBrowserOptions;
 }
 
 /**
@@ -298,6 +323,9 @@ export interface ScrapeResult {
 
   /** Raw response data */
   raw: any;
+
+  /** Files downloaded during page navigation */
+  downloads?: DownloadInfo[];
 }
 
 /**
@@ -398,6 +426,24 @@ export interface BasicScraperOptions {
 
   /** Cache provider configuration (optional, defaults to file) */
   cacheProvider?: CacheProviderConfig;
+
+  /** Whether to run browser-backed spiders in headless mode */
+  headless?: boolean;
+
+  /** Custom user agent string for browser-backed spiders */
+  userAgent?: string;
+
+  /** Base URL for the crawl4ai server when using spider: 'crawl4ai' */
+  baseUrl?: string;
+
+  /**
+   * Use CloakBrowser's external stealth Chromium runtime for browser-backed spiders.
+   * Requires callers to install the optional peer dependency `cloakbrowser`.
+   */
+  stealth?: boolean;
+
+  /** CloakBrowser runtime settings used when stealth is enabled */
+  cloak?: CloakBrowserOptions;
 }
 
 /**
@@ -432,6 +478,15 @@ export interface TreeScraperOptions {
 
   /** Custom user agent string */
   userAgent?: string;
+
+  /**
+   * Use CloakBrowser's external stealth Chromium runtime.
+   * Requires callers to install the optional peer dependency `cloakbrowser`.
+   */
+  stealth?: boolean;
+
+  /** CloakBrowser runtime settings used when stealth is enabled */
+  cloak?: CloakBrowserOptions;
 }
 
 /**

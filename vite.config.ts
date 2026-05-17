@@ -50,16 +50,15 @@ export default defineConfig({
 
         // External dependencies - don't bundle these
         'cheerio',
+        'cloakbrowser',
+        'cloakbrowser/human',
         'crawlee',
         'happy-dom',
-        'jsdom',
         'playwright',
         'undici',
-        '@mozilla/readability',
 
         // SDK dependencies
         '@happyvertical/cache',
-        '@happyvertical/files',
         '@happyvertical/utils',
         /^@happyvertical\//,
       ],
