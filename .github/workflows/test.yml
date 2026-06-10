@@ -64,19 +64,12 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # The runner image bakes Playwright OS deps, but the browser binary is
-      # version-specific and this repo pins its own Playwright version, so cache
-      # the matching browser per lockfile to avoid re-downloading every run.
-      - name: Cache Playwright browsers
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
-        with:
-          path: ~/.cache/ms-playwright
-          key: ${{ runner.os }}-playwright-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-playwright-
-
+      # The arc-runner image bakes Chromium at /ms-playwright for a specific
+      # Playwright build, so this repo pins Playwright to that build (see
+      # package.json) and the install is a no-op against the baked browser.
+      # Bounded so a version drift that forces a re-download fails fast and
+      # visibly rather than hanging. See happyvertical/iac#809.
       - name: Install Playwright Chromium
-        # No-op on a cache hit; bounded so a CDN/egress stall fails fast.
         timeout-minutes: 10
         run: pnpm exec playwright install chromium
 
