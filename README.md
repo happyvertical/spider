@@ -547,6 +547,65 @@ const dailyContent = { cacheExpiry: 86400000 };  // 24 hours
 const staticContent = { cacheExpiry: 604800000 }; // 7 days
 ```
 
+## Platform Adapter Engine (`@happyvertical/spider/platform`)
+
+A domain-agnostic layer on top of the spider adapters for building crawlers that
+recognize a **platform** behind a URL and normalize it into typed items (job
+postings, meeting documents, …). It provides an `AdapterRegistry` with two-phase
+detection (URL patterns first, then fetched HTML), a `PlatformAdapter` contract,
+a config-driven `filterLinks` helper over extracted links, and
+`createAdapterContext` to wire adapters to spider's fetch/render.
+
+```typescript
+import {
+  AdapterRegistry,
+  createAdapterContext,
+  filterLinks,
+  type PlatformAdapter,
+} from '@happyvertical/spider/platform';
+
+interface JobPosting {
+  title: string;
+  url: string;
+}
+
+const greenhouse: PlatformAdapter<JobPosting> = {
+  type: 'greenhouse',
+  name: 'Greenhouse',
+  priority: 100,
+  detectUrl: (url) =>
+    url.includes('greenhouse.io')
+      ? { normalizedUrl: url, confidence: 'high', platformName: 'Greenhouse' }
+      : null,
+  async fetch(source, ctx) {
+    const { links } = await ctx.scrapeIndex(source.url);
+    return filterLinks(links, { urlContains: ['/jobs/'] }).map((l) => ({
+      title: l.text,
+      url: l.href,
+    }));
+  },
+};
+
+const registry = new AdapterRegistry<JobPosting>();
+registry.register(greenhouse);
+
+// Use 'crawlee' for JavaScript-rendered boards (browser-driven link expansion).
+const ctx = await createAdapterContext({ spider: { adapter: 'simple' } });
+
+// Detect + run the matching adapter end-to-end:
+const postings = await registry.fetchItems(
+  { url: 'https://boards.greenhouse.io/acme' },
+  ctx,
+);
+```
+
+Detection resolves in order: registered `source.type` → each adapter's
+`detectUrl` → a single HTML fetch then each adapter's `detectHtml` → an optional
+`fallbackType`. A throwing detector or a failed fetch is logged and skipped so
+one misbehaving adapter never aborts detection. Consumers keep their own
+(persisted) source model and map it to the minimal `AdapterSource`
+(`{ url, type?, config? }`) at the boundary.
+
 ## Integration with Other @have Packages
 
 The spider package integrates seamlessly with other SDK packages:
