@@ -589,7 +589,9 @@ const greenhouse: PlatformAdapter<JobPosting> = {
 const registry = new AdapterRegistry<JobPosting>();
 registry.register(greenhouse);
 
-// Use 'crawlee' for JavaScript-rendered boards (browser-driven link expansion).
+// 'simple' suits static boards/APIs like the Greenhouse example below; pass
+// { adapter: 'crawlee' } for JavaScript-rendered boards that need
+// browser-driven link expansion.
 const ctx = await createAdapterContext({ spider: { adapter: 'simple' } });
 
 // Detect + run the matching adapter end-to-end:
