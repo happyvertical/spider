@@ -73,15 +73,12 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-      - name: Validate version < 1.0.0
+      - name: Capture current major version
+        id: current-version
         run: |
           version=$(node -p "require('./package.json').version")
-          major=$(echo "$version" | cut -d. -f1)
-          if [ "$major" -ge 1 ]; then
-            echo "ERROR: Version >= 1.0.0 requires manual release"
-            exit 1
-          fi
-          echo "Version is 0.x.x - safe to proceed with automated releases"
+          echo "major=$(echo "$version" | cut -d. -f1)" >> $GITHUB_OUTPUT
+          echo "Current version is $version"
 
       - name: Auto-generate changeset
         run: pnpm run changeset:auto
@@ -98,6 +95,20 @@ jobs:
             echo "changed=true" >> $GITHUB_OUTPUT
             echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
           fi
+
+      - name: Guard against automatic major releases
+        if: steps.version-check.outputs.changed == 'true'
+        env:
+          NEW_VERSION: ${{ steps.version-check.outputs.version }}
+          CURRENT_MAJOR: ${{ steps.current-version.outputs.major }}
+        run: |
+          new_major=$(echo "$NEW_VERSION" | cut -d. -f1)
+          if [ "$new_major" -gt "$CURRENT_MAJOR" ]; then
+            echo "ERROR: Major release ($CURRENT_MAJOR.x -> $NEW_VERSION) must be cut manually"
+            echo "Major version bumps require manual approval and coordination."
+            exit 1
+          fi
+          echo "Releasing $NEW_VERSION (no major boundary crossed) - safe to proceed"
 
       - name: Build
         if: steps.version-check.outputs.changed == 'true'
