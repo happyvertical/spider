@@ -20,6 +20,9 @@ jobs:
   test:
     name: Run Tests
     runs-on: arc-happyvertical
+    # Backstop so a stalled step (e.g. a hung browser download) fails fast
+    # instead of sitting until the 6h default.
+    timeout-minutes: 30
 
     steps:
       - name: Generate GitHub App Token
@@ -61,7 +64,13 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      # The arc-runner image bakes Chromium at /ms-playwright for a specific
+      # Playwright build, so this repo pins Playwright to that build (see
+      # package.json) and the install is a no-op against the baked browser.
+      # Bounded so a version drift that forces a re-download fails fast and
+      # visibly rather than hanging. See happyvertical/iac#809.
       - name: Install Playwright Chromium
+        timeout-minutes: 10
         run: pnpm exec playwright install chromium
 
       - name: Build

@@ -4,7 +4,7 @@ import {
   NetworkError,
   ValidationError,
 } from '@happyvertical/utils';
-import { request } from 'undici';
+import { getGlobalDispatcher, interceptors, request } from 'undici';
 import { CacheManager, createCacheKey } from '../shared/cache';
 import { extractHtmlLinks } from '../shared/links';
 import type {
@@ -86,11 +86,19 @@ export class SimpleAdapter implements SpiderAdapter {
 
     // Fetch the page
     try {
+      // Follow redirects so callers get the destination page (and its real
+      // content), not an empty 3xx body. Without this a redirected board URL
+      // yields blank HTML, breaking content-based detection/parsing. undici v7
+      // requires the redirect interceptor (the `maxRedirections` request option
+      // throws), so compose it onto the global dispatcher.
       const response = await request(url, {
         method: 'GET',
         headers: defaultHeaders,
         headersTimeout: timeout,
         bodyTimeout: timeout,
+        dispatcher: getGlobalDispatcher().compose(
+          interceptors.redirect({ maxRedirections: 5 }),
+        ),
       });
 
       if (response.statusCode >= 400) {
@@ -101,10 +109,17 @@ export class SimpleAdapter implements SpiderAdapter {
       }
 
       const content = await response.body.text();
-      const links = extractHtmlLinks(content, url);
+      // undici records the redirect chain on `context.history` when it follows
+      // redirects; the last entry is the final destination. Resolve links and
+      // Page.url against it so the documented "final URL" contract holds.
+      const finalUrl =
+        (
+          response.context as { history?: Array<URL | string> } | undefined
+        )?.history?.at(-1)?.toString() ?? url;
+      const links = extractHtmlLinks(content, finalUrl);
 
       const page: Page = {
-        url,
+        url: finalUrl,
         content,
         links,
         raw: {
