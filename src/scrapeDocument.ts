@@ -45,6 +45,12 @@ export interface DocumentScrapeOptions extends ScrapeOptions {
   /** Custom user agent for browser-backed paths */
   userAgent?: string;
 
+  /**
+   * Browser executable path for Crawlee-backed paths. If omitted, spider honors
+   * HAVE_SPIDER_BROWSER_EXECUTABLE_PATH and PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH.
+   */
+  executablePath?: string;
+
   /** Base URL for the crawl4ai server when using spider: 'crawl4ai' */
   baseUrl?: string;
 
@@ -163,6 +169,7 @@ function buildScraperOptions(options?: DocumentScrapeOptions): ScraperOptions {
       handleExclusive: options?.handleExclusive,
       headless: options?.headless,
       userAgent: options?.userAgent,
+      executablePath: options?.executablePath,
       stealth: options?.stealth,
       cloak: options?.cloak,
     };
@@ -175,6 +182,7 @@ function buildScraperOptions(options?: DocumentScrapeOptions): ScraperOptions {
     cacheProvider: options?.cacheProvider,
     headless: options?.headless,
     userAgent: options?.userAgent,
+    executablePath: options?.executablePath,
     baseUrl: options?.baseUrl,
     stealth: options?.stealth,
     cloak: options?.cloak,

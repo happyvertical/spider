@@ -108,6 +108,7 @@ export class TreeScraper implements Scraper {
       options?.headers,
       options?.timeout,
       this.options.stealth,
+      this.options.executablePath,
       this.options.cloak?.humanize,
       this.options.cloak?.executablePath,
       this.options.cloak?.autoUpdate,
@@ -307,6 +308,7 @@ export class TreeScraper implements Scraper {
           'Mozilla/5.0 (compatible; HappyVertical Spider/2.0; +https://happyvertical.com/bot)',
         containerSafe: true,
         stealth: this.options.stealth,
+        executablePath: this.options.executablePath,
         cloak: this.options.cloak,
         onPage: async ({ page, request, downloads, sleep }) => {
           await page.waitForLoadState('networkidle', { timeout });

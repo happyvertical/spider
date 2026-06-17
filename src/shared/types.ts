@@ -242,6 +242,12 @@ export interface CrawleeAdapterOptions {
   userAgent?: string;
 
   /**
+   * Browser executable path for Crawlee. If omitted, spider honors
+   * HAVE_SPIDER_BROWSER_EXECUTABLE_PATH and PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH.
+   */
+  executablePath?: string;
+
+  /**
    * Use CloakBrowser's external stealth Chromium runtime.
    * Requires callers to install the optional peer dependency `cloakbrowser`.
    */
@@ -433,6 +439,12 @@ export interface BasicScraperOptions {
   /** Custom user agent string for browser-backed spiders */
   userAgent?: string;
 
+  /**
+   * Browser executable path for Crawlee-backed spiders. If omitted, spider honors
+   * HAVE_SPIDER_BROWSER_EXECUTABLE_PATH and PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH.
+   */
+  executablePath?: string;
+
   /** Base URL for the crawl4ai server when using spider: 'crawl4ai' */
   baseUrl?: string;
 
@@ -478,6 +490,12 @@ export interface TreeScraperOptions {
 
   /** Custom user agent string */
   userAgent?: string;
+
+  /**
+   * Browser executable path for Crawlee. If omitted, spider honors
+   * HAVE_SPIDER_BROWSER_EXECUTABLE_PATH and PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH.
+   */
+  executablePath?: string;
 
   /**
    * Use CloakBrowser's external stealth Chromium runtime.
