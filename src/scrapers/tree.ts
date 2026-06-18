@@ -1,4 +1,7 @@
-import { runSinglePageWithBrowser } from '../shared/browser-runner';
+import {
+  resolveBrowserExecutablePath,
+  runSinglePageWithBrowser,
+} from '../shared/browser-runner';
 import { CacheManager, createCacheKey } from '../shared/cache';
 import { extractBrowserLinks } from '../shared/links';
 import type {
@@ -96,6 +99,10 @@ export class TreeScraper implements Scraper {
       this.options.maxIterations ?? DEFAULT_MAX_ITERATIONS;
     const clickDelay = this.options.clickDelay ?? DEFAULT_CLICK_DELAY;
     const rateLimit = this.options.rateLimit ?? DEFAULT_RATE_LIMIT;
+    const resolvedExecutablePath = resolveBrowserExecutablePath(
+      this.options.executablePath,
+      { includeEnvironment: !this.options.stealth },
+    );
 
     return createCacheKey('tree', url, [
       maxIterations,
@@ -108,6 +115,7 @@ export class TreeScraper implements Scraper {
       options?.headers,
       options?.timeout,
       this.options.stealth,
+      resolvedExecutablePath,
       this.options.cloak?.humanize,
       this.options.cloak?.executablePath,
       this.options.cloak?.autoUpdate,
@@ -307,6 +315,7 @@ export class TreeScraper implements Scraper {
           'Mozilla/5.0 (compatible; HappyVertical Spider/2.0; +https://happyvertical.com/bot)',
         containerSafe: true,
         stealth: this.options.stealth,
+        executablePath: this.options.executablePath,
         cloak: this.options.cloak,
         onPage: async ({ page, request, downloads, sleep }) => {
           await page.waitForLoadState('networkidle', { timeout });

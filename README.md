@@ -175,6 +175,19 @@ Recommended deployment defaults:
 - Treat CloakBrowser binary-license compliance as the caller's responsibility.
 - Use stealth only for authorized scraping where you have permission and are respecting target-site terms, rate limits, and robots policies.
 
+### Container Chromium Runtime
+
+Browser-backed adapters use Playwright through Crawlee. In containers where a
+system Chromium is already installed, set `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH`
+or `HAVE_SPIDER_BROWSER_EXECUTABLE_PATH`, or pass `executablePath` directly:
+
+```typescript
+const spider = await getSpider({
+  adapter: 'crawlee',
+  executablePath: '/usr/bin/chromium',
+});
+```
+
 ## API Reference
 
 ### Factory Function
@@ -189,6 +202,7 @@ Creates a spider adapter instance based on the provided options.
   - `cacheDir`: Custom cache directory (optional, default: `.cache/spider`)
   - `headless`: Browser headless mode - Crawlee only (optional, default: `true`)
   - `userAgent`: Custom user agent - Crawlee only (optional)
+  - `executablePath`: Browser executable path - Crawlee only (optional; falls back to `HAVE_SPIDER_BROWSER_EXECUTABLE_PATH` or `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH`)
   - `stealth`: Enable optional CloakBrowser runtime - Crawlee only (optional, default: `false`)
   - `cloak`: CloakBrowser runtime settings - Crawlee only (optional)
 

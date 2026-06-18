@@ -3,6 +3,7 @@
  */
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { getSpider } from './shared/factory';
+import { resolveBrowserExecutablePath } from './shared/browser-runner';
 
 describe('Spider Environment Variable Configuration', () => {
   const originalEnv = process.env;
@@ -60,6 +61,39 @@ describe('Spider Environment Variable Configuration', () => {
       });
 
       expect(spider).toBeDefined();
+    });
+  });
+
+  describe('browser executable path', () => {
+    it('uses PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH when no explicit path is provided', () => {
+      process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH = '/usr/bin/chromium';
+
+      expect(resolveBrowserExecutablePath()).toBe('/usr/bin/chromium');
+    });
+
+    it('prefers HAVE_SPIDER_BROWSER_EXECUTABLE_PATH over the Playwright env var', () => {
+      process.env.HAVE_SPIDER_BROWSER_EXECUTABLE_PATH = '/opt/spider/chromium';
+      process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH = '/usr/bin/chromium';
+
+      expect(resolveBrowserExecutablePath()).toBe('/opt/spider/chromium');
+    });
+
+    it('prefers an explicit executable path over environment variables', () => {
+      process.env.HAVE_SPIDER_BROWSER_EXECUTABLE_PATH = '/opt/spider/chromium';
+      process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH = '/usr/bin/chromium';
+
+      expect(resolveBrowserExecutablePath('/custom/chromium')).toBe(
+        '/custom/chromium',
+      );
+    });
+
+    it('can ignore environment paths for CloakBrowser stealth launches', () => {
+      process.env.HAVE_SPIDER_BROWSER_EXECUTABLE_PATH = '/opt/spider/chromium';
+      process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH = '/usr/bin/chromium';
+
+      expect(
+        resolveBrowserExecutablePath(undefined, { includeEnvironment: false }),
+      ).toBeUndefined();
     });
   });
 

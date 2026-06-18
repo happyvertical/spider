@@ -63,6 +63,7 @@ export class BasicScraper implements Scraper {
         ...(spiderType === 'crawlee'
           ? {
               stealth: this.options.stealth,
+              executablePath: this.options.executablePath,
               cloak: this.options.cloak,
             }
           : {}),

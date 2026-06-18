@@ -4,7 +4,10 @@ import {
   NetworkError,
   ValidationError,
 } from '@happyvertical/utils';
-import { runSinglePageWithBrowser } from '../shared/browser-runner';
+import {
+  resolveBrowserExecutablePath,
+  runSinglePageWithBrowser,
+} from '../shared/browser-runner';
 import { CacheManager, createCacheKey } from '../shared/cache';
 import { extractBrowserLinks } from '../shared/links';
 import type {
@@ -27,6 +30,7 @@ export class CrawleeAdapter implements SpiderAdapter {
   private headless: boolean;
   private userAgent?: string;
   private stealth?: boolean;
+  private executablePath?: string;
   private cloak?: CloakBrowserOptions;
 
   constructor(options: CrawleeAdapterOptions) {
@@ -35,6 +39,7 @@ export class CrawleeAdapter implements SpiderAdapter {
     this.headless = options.headless !== false;
     this.userAgent = options.userAgent;
     this.stealth = options.stealth;
+    this.executablePath = options.executablePath;
     this.cloak = options.cloak;
   }
 
@@ -43,11 +48,17 @@ export class CrawleeAdapter implements SpiderAdapter {
     headers: Record<string, string>,
     effectiveUserAgent: string | undefined,
   ): string {
+    const resolvedExecutablePath = resolveBrowserExecutablePath(
+      this.executablePath,
+      { includeEnvironment: !this.stealth },
+    );
+
     return createCacheKey('crawlee', url, [
       this.headless,
       effectiveUserAgent,
       headers,
       this.stealth,
+      resolvedExecutablePath,
       this.cloak?.humanize,
       this.cloak?.executablePath,
       this.cloak?.autoUpdate,
@@ -204,6 +215,7 @@ export class CrawleeAdapter implements SpiderAdapter {
         headers,
         userAgent: effectiveUserAgent,
         stealth: this.stealth,
+        executablePath: this.executablePath,
         cloak: this.cloak,
         onPage: async ({ page, request, downloads, sleep }) => {
           await page.waitForLoadState('networkidle', { timeout });

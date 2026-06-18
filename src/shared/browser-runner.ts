@@ -15,6 +15,10 @@ const CLOAK_IGNORE_DEFAULT_ARGS = [
   '--enable-automation',
   '--enable-unsafe-swiftshader',
 ];
+const BROWSER_EXECUTABLE_PATH_ENV_VARS = [
+  'HAVE_SPIDER_BROWSER_EXECUTABLE_PATH',
+  'PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH',
+];
 
 let cloakAutoUpdateEnvQueue: Promise<void> = Promise.resolve();
 
@@ -27,6 +31,7 @@ export interface BrowserRunnerOptions<T> {
   userAgent?: string;
   containerSafe?: boolean;
   stealth?: boolean;
+  executablePath?: string;
   cloak?: CloakBrowserOptions;
   onPage: (context: BrowserRunnerPageContext) => Promise<T>;
   onDownload: (context: BrowserRunnerDownloadContext) => T;
@@ -94,10 +99,34 @@ async function withCloakAutoUpdateEnv<T>(
   return run;
 }
 
+export function resolveBrowserExecutablePath(
+  explicitPath?: string,
+  options: { includeEnvironment?: boolean } = {},
+): string | undefined {
+  const normalizedExplicitPath = explicitPath?.trim();
+  if (normalizedExplicitPath) {
+    return normalizedExplicitPath;
+  }
+
+  if (options.includeEnvironment === false) {
+    return undefined;
+  }
+
+  for (const envName of BROWSER_EXECUTABLE_PATH_ENV_VARS) {
+    const configuredPath = process.env[envName]?.trim();
+    if (configuredPath) {
+      return configuredPath;
+    }
+  }
+
+  return undefined;
+}
+
 async function resolveLaunchOptions(options: {
   headless: boolean;
   containerSafe?: boolean;
   stealth?: boolean;
+  executablePath?: string;
   cloak?: CloakBrowserOptions;
 }): Promise<Record<string, unknown>> {
   const args = options.containerSafe
@@ -105,30 +134,33 @@ async function resolveLaunchOptions(options: {
     : [...DEFAULT_BROWSER_ARGS];
 
   if (!options.stealth) {
+    const executablePath = resolveBrowserExecutablePath(options.executablePath);
+
     return {
       headless: options.headless,
+      ...(executablePath ? { executablePath } : {}),
       args,
     };
   }
 
-  const { executablePath, stealthArgs } = await withCloakAutoUpdateEnv(
+  const { cloakExecutablePath, stealthArgs } = await withCloakAutoUpdateEnv(
     options.cloak,
     async () => {
       const cloakbrowser = await importExternalPackage('cloakbrowser');
-      const executablePath =
+      const cloakExecutablePath =
         options.cloak?.executablePath || (await cloakbrowser.ensureBinary());
       const stealthArgs =
         typeof cloakbrowser.getDefaultStealthArgs === 'function'
           ? cloakbrowser.getDefaultStealthArgs()
           : [];
 
-      return { executablePath, stealthArgs };
+      return { cloakExecutablePath, stealthArgs };
     },
   );
 
   return {
     headless: options.headless,
-    executablePath,
+    executablePath: cloakExecutablePath,
     args: [...stealthArgs, ...args],
     ignoreDefaultArgs: CLOAK_IGNORE_DEFAULT_ARGS,
   };

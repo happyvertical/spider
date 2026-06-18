@@ -30,6 +30,9 @@ function scraperOptionsFor(spider: SpiderAdapterOptions): ScraperOptions {
     ...('userAgent' in spider ? { userAgent: spider.userAgent } : {}),
     ...('baseUrl' in spider ? { baseUrl: spider.baseUrl } : {}),
     ...('stealth' in spider ? { stealth: spider.stealth } : {}),
+    ...('executablePath' in spider
+      ? { executablePath: spider.executablePath }
+      : {}),
     ...('cloak' in spider ? { cloak: spider.cloak } : {}),
   };
 }
