@@ -4,7 +4,10 @@ import {
   NetworkError,
   ValidationError,
 } from '@happyvertical/utils';
-import { runSinglePageWithBrowser } from '../shared/browser-runner';
+import {
+  resolveBrowserExecutablePath,
+  runSinglePageWithBrowser,
+} from '../shared/browser-runner';
 import { CacheManager, createCacheKey } from '../shared/cache';
 import { extractBrowserLinks } from '../shared/links';
 import type {
@@ -45,12 +48,17 @@ export class CrawleeAdapter implements SpiderAdapter {
     headers: Record<string, string>,
     effectiveUserAgent: string | undefined,
   ): string {
+    const resolvedExecutablePath = resolveBrowserExecutablePath(
+      this.executablePath,
+      { includeEnvironment: !this.stealth },
+    );
+
     return createCacheKey('crawlee', url, [
       this.headless,
       effectiveUserAgent,
       headers,
       this.stealth,
-      this.executablePath,
+      resolvedExecutablePath,
       this.cloak?.humanize,
       this.cloak?.executablePath,
       this.cloak?.autoUpdate,

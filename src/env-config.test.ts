@@ -82,7 +82,18 @@ describe('Spider Environment Variable Configuration', () => {
       process.env.HAVE_SPIDER_BROWSER_EXECUTABLE_PATH = '/opt/spider/chromium';
       process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH = '/usr/bin/chromium';
 
-      expect(resolveBrowserExecutablePath('/custom/chromium')).toBe('/custom/chromium');
+      expect(resolveBrowserExecutablePath('/custom/chromium')).toBe(
+        '/custom/chromium',
+      );
+    });
+
+    it('can ignore environment paths for CloakBrowser stealth launches', () => {
+      process.env.HAVE_SPIDER_BROWSER_EXECUTABLE_PATH = '/opt/spider/chromium';
+      process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH = '/usr/bin/chromium';
+
+      expect(
+        resolveBrowserExecutablePath(undefined, { includeEnvironment: false }),
+      ).toBeUndefined();
     });
   });
 

@@ -101,10 +101,15 @@ async function withCloakAutoUpdateEnv<T>(
 
 export function resolveBrowserExecutablePath(
   explicitPath?: string,
+  options: { includeEnvironment?: boolean } = {},
 ): string | undefined {
   const normalizedExplicitPath = explicitPath?.trim();
   if (normalizedExplicitPath) {
     return normalizedExplicitPath;
+  }
+
+  if (options.includeEnvironment === false) {
+    return undefined;
   }
 
   for (const envName of BROWSER_EXECUTABLE_PATH_ENV_VARS) {
@@ -127,9 +132,10 @@ async function resolveLaunchOptions(options: {
   const args = options.containerSafe
     ? [...CONTAINER_BROWSER_ARGS]
     : [...DEFAULT_BROWSER_ARGS];
-  const executablePath = resolveBrowserExecutablePath(options.executablePath);
 
   if (!options.stealth) {
+    const executablePath = resolveBrowserExecutablePath(options.executablePath);
+
     return {
       headless: options.headless,
       ...(executablePath ? { executablePath } : {}),
@@ -142,9 +148,7 @@ async function resolveLaunchOptions(options: {
     async () => {
       const cloakbrowser = await importExternalPackage('cloakbrowser');
       const cloakExecutablePath =
-        options.cloak?.executablePath ||
-        executablePath ||
-        (await cloakbrowser.ensureBinary());
+        options.cloak?.executablePath || (await cloakbrowser.ensureBinary());
       const stealthArgs =
         typeof cloakbrowser.getDefaultStealthArgs === 'function'
           ? cloakbrowser.getDefaultStealthArgs()
