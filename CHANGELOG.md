@@ -1,5 +1,11 @@
 # @happyvertical/spider
 
+## 1.1.3
+
+### Patch Changes
+
+- 62071b1: Honor configured Chromium executable paths in Crawlee-backed browser runs.
+
 ## 1.1.2
 
 ### Patch Changes
