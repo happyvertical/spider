@@ -1,5 +1,13 @@
 # @happyvertical/spider
 
+## 1.1.6
+
+### Patch Changes
+
+- ### Dependencies
+
+  - update actions/checkout action to v7 (#89)
+
 ## 1.1.5
 
 ### Patch Changes
