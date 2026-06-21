@@ -61,7 +61,7 @@ jobs:
             1. Tests run on main branch
             2. Package is built
             3. Version is bumped automatically
-            4. Package is published to GitHub Packages
+            4. Package is published to npm
             5. Git tag is created
 
             No manual intervention needed!`;

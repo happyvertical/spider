@@ -755,11 +755,11 @@ packages:
     os: [win32]
 
   '@happyvertical/cache@0.74.4':
-    resolution: {integrity: sha512-dirZEyQt7xlk5S6DDys0hRMDGNieSPT1RphvPAorrhzOAOFqWCNjwCgNmM4FxoXfEMzRbr/gbxA3xKeq8RRZQQ==, tarball: https://npm.pkg.github.com/download/@happyvertical/cache/0.74.4/7f9c308b8329347a66fbd0b7a1047a862a5b55fd}
+    resolution: {integrity: sha512-dirZEyQt7xlk5S6DDys0hRMDGNieSPT1RphvPAorrhzOAOFqWCNjwCgNmM4FxoXfEMzRbr/gbxA3xKeq8RRZQQ==}
     hasBin: true
 
   '@happyvertical/utils@0.74.4':
-    resolution: {integrity: sha512-FhLWBHhiHVvyOx2dghuwFH8pSZaIsKAhdYAAWM1WKaNxlCRqOzuOINOAbi5BxCM9KGQhw2YEbug38EWfv7DHjA==, tarball: https://npm.pkg.github.com/download/@happyvertical/utils/0.74.4/ced22f3058af0c58b12eeea9c798fd0366ee13e6}
+    resolution: {integrity: sha512-FhLWBHhiHVvyOx2dghuwFH8pSZaIsKAhdYAAWM1WKaNxlCRqOzuOINOAbi5BxCM9KGQhw2YEbug38EWfv7DHjA==}
     hasBin: true
 
   '@inquirer/external-editor@1.0.3':

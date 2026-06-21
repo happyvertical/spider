@@ -6,15 +6,9 @@ on:
   pull_request:
     branches: [main]
   workflow_call:
-    secrets:
-      HAVE_RELEASE_APP_ID:
-        required: false
-      HAVE_RELEASE_APP_PRIVATE_KEY:
-        required: false
 
 permissions:
   contents: read
-  packages: read
 
 jobs:
   test:
@@ -25,15 +19,6 @@ jobs:
     timeout-minutes: 30
 
     steps:
-      - name: Generate GitHub App Token
-        id: app-token
-        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3
-        with:
-          app-id: ${{ secrets.HAVE_RELEASE_APP_ID }}
-          private-key: ${{ secrets.HAVE_RELEASE_APP_PRIVATE_KEY }}
-          owner: happyvertical
-        continue-on-error: true
-
       - name: Checkout repository
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
@@ -41,7 +26,6 @@ jobs:
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: '24'
-          registry-url: 'https://npm.pkg.github.com'
 
       - name: Setup pnpm
         uses: pnpm/action-setup@0e279bb959325dab635dd2c09392533439d90093 # v6
@@ -61,8 +45,6 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       # The arc-runner image bakes Chromium at /ms-playwright for a specific
       # Playwright build, so this repo pins Playwright to that build (see
