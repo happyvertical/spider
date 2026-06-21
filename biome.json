@@ -6,6 +6,7 @@
       "test/**/*.{js,ts,tsx,jsx}",
       "*.{js,ts,tsx,jsx}"
     ],
+    "ignore": ["coverage/**", "docs/api/**"],
     "ignoreUnknown": true
   },
   "vcs": {

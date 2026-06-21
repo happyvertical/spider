@@ -78,6 +78,7 @@
 export {
   type DocumentLinkOptions,
   type DocumentResult,
+  type DocumentScrapeOptions,
   findDocumentLinks,
   scrapeDocument,
 } from './scrapeDocument';

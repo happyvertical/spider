@@ -1,0 +1,26 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "entryPoints": ["src/index.ts", "src/platform/index.ts"],
+  "entryPointStrategy": "resolve",
+  "out": "docs/api",
+  "readme": "none",
+  "tsconfig": "tsconfig.json",
+  "cleanOutputDir": true,
+  "excludeInternal": true,
+  "excludePrivate": true,
+  "excludeProtected": true,
+  "excludeReferences": true,
+  "gitRevision": "main",
+  "githubPages": false,
+  "hideGenerator": true,
+  "includeVersion": false,
+  "treatWarningsAsErrors": true,
+  "treatValidationWarningsAsErrors": true,
+  "requiredToBeDocumented": ["Class", "Function", "Interface", "TypeAlias"],
+  "validation": {
+    "invalidLink": true,
+    "notDocumented": true,
+    "notExported": true,
+    "rewrittenLink": true
+  }
+}

@@ -223,6 +223,12 @@ interface Page {
 - Links should be absolute URLs (relative URLs converted)
 - Handle errors with ValidationError and NetworkError from @happyvertical/utils
 - Callers should respect robots.txt and use descriptive User-Agent strings
+- Public API docs are generated with TypeDoc into `docs/api/`; run `pnpm docs:api`
+  after changing exported classes, functions, interfaces, or type aliases
+- `pnpm docs:api:check` must stay clean in CI; TypeDoc warnings are treated as
+  errors and public API exports should have consumer-facing JSDoc
+- `pnpm test:coverage` gates Vitest V8 coverage at 80% statements, 65% branches,
+  80% functions, and 80% lines
 
 ## Expert Agent Expertise
 

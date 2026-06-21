@@ -3,6 +3,7 @@ import { getSpider } from '../shared/factory.js';
 import type { ScraperOptions, SpiderAdapterOptions } from '../shared/types.js';
 import type { AdapterContext } from './types.js';
 
+/** Options for creating a platform adapter context backed by spider. */
 export interface CreateAdapterContextOptions {
   /** Spider adapter to back fetches with ('simple' static, 'crawlee' for JS). */
   spider?: SpiderAdapterOptions;

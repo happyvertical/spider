@@ -124,7 +124,8 @@ export interface FetchOptions {
   /**
    * Request timeout in milliseconds
    * @default 30000
-   * @env HAVE_SPIDER_TIMEOUT
+   *
+   * Can also be configured with `HAVE_SPIDER_TIMEOUT`.
    */
   timeout?: number;
 
@@ -141,14 +142,16 @@ export interface FetchOptions {
   cacheExpiry?: number;
 
   /**
-   * Custom user agent string
-   * @env HAVE_SPIDER_USER_AGENT
+   * Custom user agent string.
+   *
+   * Can also be configured with `HAVE_SPIDER_USER_AGENT`.
    */
   userAgent?: string;
 
   /**
-   * Maximum number of requests allowed
-   * @env HAVE_SPIDER_MAX_REQUESTS
+   * Maximum number of requests allowed.
+   *
+   * Can also be configured with `HAVE_SPIDER_MAX_REQUESTS`.
    */
   maxRequests?: number;
 }
@@ -266,7 +269,8 @@ export interface Crawl4aiAdapterOptions {
   /**
    * Base URL of the crawl4ai server
    * @default 'http://localhost:11235'
-   * @env HAVE_SPIDER_CRAWL4AI_URL
+   *
+   * Can also be configured with `HAVE_SPIDER_CRAWL4AI_URL`.
    */
   baseUrl?: string;
   /**
@@ -368,17 +372,10 @@ export interface ScrapeMetrics {
   complete: boolean;
 }
 
-/**
- * Types of scraping strategies
- */
+/** Runtime-supported scraping strategies. */
 export type ScraperType =
   | 'basic' // No interactions, just scrape
-  | 'tree' // Expand hierarchical trees/accordions
-  | 'ajax' // Wait for async loads
-  | 'scroll' // Infinite scroll
-  | 'pagination' // Multi-page navigation
-  | 'tabs' // Tab switching
-  | 'hybrid'; // Multiple strategies combined
+  | 'tree'; // Expand hierarchical trees/accordions
 
 /**
  * Base interface all scrapers must implement
@@ -507,99 +504,5 @@ export interface TreeScraperOptions {
   cloak?: CloakBrowserOptions;
 }
 
-/**
- * Options for AJAX scraper
- */
-export interface AjaxScraperOptions {
-  scraper: 'ajax';
-
-  /** Cache directory */
-  cacheDir?: string;
-
-  /** Cache provider configuration (optional, defaults to file) */
-  cacheProvider?: CacheProviderConfig;
-
-  /** Max time to wait for content in ms */
-  maxWaitTime?: number;
-
-  /** How to detect completion */
-  completionStrategy?: 'link-count' | 'network-idle' | 'custom-selector';
-
-  /** Selector to wait for (if using custom-selector) */
-  waitForSelector?: string;
-
-  /** Whether to run browser in headless mode */
-  headless?: boolean;
-
-  /** Custom user agent string */
-  userAgent?: string;
-}
-
-/**
- * Options for scroll scraper
- */
-export interface ScrollScraperOptions {
-  scraper: 'scroll';
-
-  /** Cache directory */
-  cacheDir?: string;
-
-  /** Cache provider configuration (optional, defaults to file) */
-  cacheProvider?: CacheProviderConfig;
-
-  /** Max scrolls to perform */
-  maxScrolls?: number;
-
-  /** Delay between scrolls in ms */
-  scrollDelay?: number;
-
-  /** How to detect no more content */
-  endDetection?: 'link-count' | 'scroll-position' | 'sentinel';
-
-  /** Sentinel selector (if using sentinel detection) */
-  sentinelSelector?: string;
-
-  /** Whether to run browser in headless mode */
-  headless?: boolean;
-
-  /** Custom user agent string */
-  userAgent?: string;
-}
-
-/**
- * Options for pagination scraper
- */
-export interface PaginationScraperOptions {
-  scraper: 'pagination';
-
-  /** Cache directory */
-  cacheDir?: string;
-
-  /** Cache provider configuration (optional, defaults to file) */
-  cacheProvider?: CacheProviderConfig;
-
-  /** Max pages to crawl */
-  maxPages?: number;
-
-  /** Selector for next button */
-  nextSelector?: string;
-
-  /** Follow numbered page links */
-  followPageNumbers?: boolean;
-
-  /** Whether to run browser in headless mode */
-  headless?: boolean;
-
-  /** Custom user agent string */
-  userAgent?: string;
-}
-
-/**
- * Discriminated union of all scraper options
- */
-export type ScraperOptions =
-  | BasicScraperOptions
-  | TreeScraperOptions
-  | AjaxScraperOptions
-  | ScrollScraperOptions
-  | PaginationScraperOptions;
+/** Discriminated union of runtime-supported scraper options. */
+export type ScraperOptions = BasicScraperOptions | TreeScraperOptions;

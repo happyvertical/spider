@@ -868,6 +868,31 @@ const page = await spider.fetch('https://example.com');
 - **vitest** - Testing framework
 - **vite** and **vite-plugin-dts** - ESM build and declaration generation
 - **biome** - Linting/formatting
+- **typedoc** - Generated API reference documentation
+
+## Development
+
+Common local checks:
+
+```bash
+# Lint, typecheck, and build
+pnpm lint
+pnpm typecheck
+pnpm build
+
+# Generate committed API reference docs under docs/api/
+pnpm docs:api
+
+# Verify generated API docs are current
+pnpm docs:api:check
+
+# Run the test suite with coverage thresholds
+pnpm test:coverage
+```
+
+The API reference in [docs/api/index.html](docs/api/index.html) is generated
+from public JSDoc. Keep public classes, functions, interfaces, and type aliases
+documented with comments that are useful to package consumers.
 
 ## Testing
 
@@ -876,6 +901,9 @@ The package includes comprehensive unit and integration tests:
 ```bash
 # Run all tests
 pnpm test
+
+# Run tests with coverage thresholds
+pnpm test:coverage
 
 # Run tests in watch mode
 pnpm test:watch
@@ -901,5 +929,5 @@ This package is licensed under the MIT License. See [LICENSE](LICENSE) for detai
 ## Support
 
 - **Issues**: [GitHub Issues](https://github.com/happyvertical/spider/issues)
-- **Documentation**: This README and [SPEC.md](SPEC.md)
+- **Documentation**: This README, [SPEC.md](SPEC.md), and [API reference](docs/api/index.html)
 - **Examples**: See `src/**/*.spec.ts`, `src/**/*.optional.test.ts`, and `testdata/`
