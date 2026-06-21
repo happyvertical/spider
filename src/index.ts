@@ -28,14 +28,13 @@
  * - **Simple**: Fast HTTP requests with cheerio parsing
  * - **DOM**: HTML processing with happy-dom for complex pages
  * - **Crawlee**: Full browser automation with Playwright
+ * - **Crawl4ai**: Remote crawl4ai service with optional markdown output
  *
  * ## Scraper Strategies
  * Different content extraction strategies (HOW to extract):
  * - **Basic**: Simple scraping with no interactions
  * - **Tree**: Expand hierarchical trees/accordions to reveal hidden content
- * - **AJAX**: Wait for async content to load (coming soon)
- * - **Scroll**: Handle infinite scroll (coming soon)
- * - **Pagination**: Navigate through multiple pages (coming soon)
+ * Only `basic` and `tree` are implemented by `getScraper` today.
  *
  * ## Advanced Usage
  *

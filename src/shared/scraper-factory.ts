@@ -7,13 +7,9 @@ import type { Scraper, ScraperOptions } from './types';
  * Scrapers define HOW to extract content from a page:
  * - basic: Simple scraping with no interactions
  * - tree: Expand hierarchical trees/accordions to reveal hidden content
- * - ajax: Wait for async content to load
- * - scroll: Handle infinite scroll
- * - pagination: Navigate through multiple pages
- * - tabs: Switch between tabs
- * - hybrid: Combine multiple strategies
  *
- * Each scraper internally chooses which spider adapter to use.
+ * Only `basic` and `tree` are implemented. Each scraper internally chooses
+ * which spider adapter to use.
  *
  * @param options - Scraper configuration (discriminated union)
  * @returns Promise resolving to a scraper instance
