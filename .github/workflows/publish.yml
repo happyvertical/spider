@@ -11,6 +11,7 @@ concurrency:
 
 permissions:
   contents: write
+  packages: read
 
 jobs:
   test:
@@ -46,6 +47,13 @@ jobs:
       - name: Setup pnpm
         uses: pnpm/action-setup@0e279bb959325dab635dd2c09392533439d90093 # v6
 
+      - name: Configure GitHub Packages for internal dependencies
+        run: |
+          echo "@happyvertical:registry=https://npm.pkg.github.com" >> .npmrc
+          echo "//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}" >> .npmrc
+        env:
+          NODE_AUTH_TOKEN: ${{ github.token }}
+
       - name: Get pnpm store directory
         shell: bash
         run: |
@@ -62,7 +70,10 @@ jobs:
       - name: Install dependencies
         run: pnpm install
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ github.token }}
+
+      - name: Verify public dependency mirrors
+        run: pnpm deps:public:check
 
       - name: Configure Git
         run: |

@@ -48,6 +48,7 @@
     "build:watch": "vite build --watch",
     "typecheck": "tsc --noEmit",
     "lint": "biome check",
+    "deps:public:check": "node scripts/check-public-dependencies.mjs",
     "docs:api": "typedoc",
     "docs:api:check": "pnpm docs:api && git diff --exit-code -- docs/api && test -z \"$(git ls-files --others --exclude-standard -- docs/api)\"",
     "format": "biome format --write src/",

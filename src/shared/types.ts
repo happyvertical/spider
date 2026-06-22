@@ -372,10 +372,21 @@ export interface ScrapeMetrics {
   complete: boolean;
 }
 
-/** Runtime-supported scraping strategies. */
+/**
+ * Public scraper strategy names.
+ *
+ * Only `basic` and `tree` are implemented by {@link getScraper}. The remaining
+ * legacy names are retained for source compatibility with existing TypeScript
+ * consumers and will be rejected at runtime until an implementation is added.
+ */
 export type ScraperType =
   | 'basic' // No interactions, just scrape
-  | 'tree'; // Expand hierarchical trees/accordions
+  | 'tree' // Expand hierarchical trees/accordions
+  | 'ajax' // Reserved legacy strategy name
+  | 'scroll' // Reserved legacy strategy name
+  | 'pagination' // Reserved legacy strategy name
+  | 'tabs' // Reserved legacy strategy name
+  | 'hybrid'; // Reserved legacy strategy name
 
 /**
  * Base interface all scrapers must implement
@@ -504,5 +515,115 @@ export interface TreeScraperOptions {
   cloak?: CloakBrowserOptions;
 }
 
-/** Discriminated union of runtime-supported scraper options. */
-export type ScraperOptions = BasicScraperOptions | TreeScraperOptions;
+/**
+ * Legacy public options for a reserved AJAX scraper strategy.
+ *
+ * @deprecated No AJAX scraper is currently implemented. This interface is kept
+ * for source compatibility; {@link getScraper} accepts only `basic` and `tree`
+ * at runtime.
+ */
+export interface AjaxScraperOptions {
+  scraper: 'ajax';
+
+  /** Cache directory */
+  cacheDir?: string;
+
+  /** Cache provider configuration (optional, defaults to file) */
+  cacheProvider?: CacheProviderConfig;
+
+  /** Max time to wait for content in ms */
+  maxWaitTime?: number;
+
+  /** How to detect completion */
+  completionStrategy?: 'link-count' | 'network-idle' | 'custom-selector';
+
+  /** Selector to wait for (if using custom-selector) */
+  waitForSelector?: string;
+
+  /** Whether to run browser in headless mode */
+  headless?: boolean;
+
+  /** Custom user agent string */
+  userAgent?: string;
+}
+
+/**
+ * Legacy public options for a reserved infinite-scroll scraper strategy.
+ *
+ * @deprecated No scroll scraper is currently implemented. This interface is
+ * kept for source compatibility; {@link getScraper} accepts only `basic` and
+ * `tree` at runtime.
+ */
+export interface ScrollScraperOptions {
+  scraper: 'scroll';
+
+  /** Cache directory */
+  cacheDir?: string;
+
+  /** Cache provider configuration (optional, defaults to file) */
+  cacheProvider?: CacheProviderConfig;
+
+  /** Max scrolls to perform */
+  maxScrolls?: number;
+
+  /** Delay between scrolls in ms */
+  scrollDelay?: number;
+
+  /** How to detect no more content */
+  endDetection?: 'link-count' | 'scroll-position' | 'sentinel';
+
+  /** Sentinel selector (if using sentinel detection) */
+  sentinelSelector?: string;
+
+  /** Whether to run browser in headless mode */
+  headless?: boolean;
+
+  /** Custom user agent string */
+  userAgent?: string;
+}
+
+/**
+ * Legacy public options for a reserved pagination scraper strategy.
+ *
+ * @deprecated No pagination scraper is currently implemented. This interface is
+ * kept for source compatibility; {@link getScraper} accepts only `basic` and
+ * `tree` at runtime.
+ */
+export interface PaginationScraperOptions {
+  scraper: 'pagination';
+
+  /** Cache directory */
+  cacheDir?: string;
+
+  /** Cache provider configuration (optional, defaults to file) */
+  cacheProvider?: CacheProviderConfig;
+
+  /** Max pages to crawl */
+  maxPages?: number;
+
+  /** Selector for next button */
+  nextSelector?: string;
+
+  /** Follow numbered page links */
+  followPageNumbers?: boolean;
+
+  /** Whether to run browser in headless mode */
+  headless?: boolean;
+
+  /** Custom user agent string */
+  userAgent?: string;
+}
+
+/**
+ * Discriminated union of public scraper options.
+ *
+ * Only `BasicScraperOptions` and `TreeScraperOptions` are currently implemented
+ * by {@link getScraper}. Legacy option interfaces remain exported so existing
+ * type-checked consumers keep compiling.
+ */
+export type ScraperOptions =
+  | BasicScraperOptions
+  | TreeScraperOptions
+  | AjaxScraperOptions
+  | ScrollScraperOptions
+  | PaginationScraperOptions;
