@@ -124,7 +124,8 @@ export interface FetchOptions {
   /**
    * Request timeout in milliseconds
    * @default 30000
-   * @env HAVE_SPIDER_TIMEOUT
+   *
+   * Can also be configured with `HAVE_SPIDER_TIMEOUT`.
    */
   timeout?: number;
 
@@ -141,14 +142,16 @@ export interface FetchOptions {
   cacheExpiry?: number;
 
   /**
-   * Custom user agent string
-   * @env HAVE_SPIDER_USER_AGENT
+   * Custom user agent string.
+   *
+   * Can also be configured with `HAVE_SPIDER_USER_AGENT`.
    */
   userAgent?: string;
 
   /**
-   * Maximum number of requests allowed
-   * @env HAVE_SPIDER_MAX_REQUESTS
+   * Maximum number of requests allowed.
+   *
+   * Can also be configured with `HAVE_SPIDER_MAX_REQUESTS`.
    */
   maxRequests?: number;
 }
@@ -266,7 +269,8 @@ export interface Crawl4aiAdapterOptions {
   /**
    * Base URL of the crawl4ai server
    * @default 'http://localhost:11235'
-   * @env HAVE_SPIDER_CRAWL4AI_URL
+   *
+   * Can also be configured with `HAVE_SPIDER_CRAWL4AI_URL`.
    */
   baseUrl?: string;
   /**
@@ -369,16 +373,20 @@ export interface ScrapeMetrics {
 }
 
 /**
- * Types of scraping strategies
+ * Public scraper strategy names.
+ *
+ * Only `basic` and `tree` are implemented by {@link getScraper}. The remaining
+ * legacy names are retained for source compatibility with existing TypeScript
+ * consumers and will be rejected at runtime until an implementation is added.
  */
 export type ScraperType =
   | 'basic' // No interactions, just scrape
   | 'tree' // Expand hierarchical trees/accordions
-  | 'ajax' // Wait for async loads
-  | 'scroll' // Infinite scroll
-  | 'pagination' // Multi-page navigation
-  | 'tabs' // Tab switching
-  | 'hybrid'; // Multiple strategies combined
+  | 'ajax' // Reserved legacy strategy name
+  | 'scroll' // Reserved legacy strategy name
+  | 'pagination' // Reserved legacy strategy name
+  | 'tabs' // Reserved legacy strategy name
+  | 'hybrid'; // Reserved legacy strategy name
 
 /**
  * Base interface all scrapers must implement
@@ -508,7 +516,11 @@ export interface TreeScraperOptions {
 }
 
 /**
- * Options for AJAX scraper
+ * Legacy public options for a reserved AJAX scraper strategy.
+ *
+ * @deprecated No AJAX scraper is currently implemented. This interface is kept
+ * for source compatibility; {@link getScraper} accepts only `basic` and `tree`
+ * at runtime.
  */
 export interface AjaxScraperOptions {
   scraper: 'ajax';
@@ -536,7 +548,11 @@ export interface AjaxScraperOptions {
 }
 
 /**
- * Options for scroll scraper
+ * Legacy public options for a reserved infinite-scroll scraper strategy.
+ *
+ * @deprecated No scroll scraper is currently implemented. This interface is
+ * kept for source compatibility; {@link getScraper} accepts only `basic` and
+ * `tree` at runtime.
  */
 export interface ScrollScraperOptions {
   scraper: 'scroll';
@@ -567,7 +583,11 @@ export interface ScrollScraperOptions {
 }
 
 /**
- * Options for pagination scraper
+ * Legacy public options for a reserved pagination scraper strategy.
+ *
+ * @deprecated No pagination scraper is currently implemented. This interface is
+ * kept for source compatibility; {@link getScraper} accepts only `basic` and
+ * `tree` at runtime.
  */
 export interface PaginationScraperOptions {
   scraper: 'pagination';
@@ -595,7 +615,11 @@ export interface PaginationScraperOptions {
 }
 
 /**
- * Discriminated union of all scraper options
+ * Discriminated union of public scraper options.
+ *
+ * Only `BasicScraperOptions` and `TreeScraperOptions` are currently implemented
+ * by {@link getScraper}. Legacy option interfaces remain exported so existing
+ * type-checked consumers keep compiling.
  */
 export type ScraperOptions =
   | BasicScraperOptions

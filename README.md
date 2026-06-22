@@ -9,7 +9,8 @@ sidebar_position: 9
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
-Web scraping and content extraction with multiple adapters for different use cases.
+Web scraping and content extraction with multiple adapters for static pages,
+DOM-normalized pages, browser-rendered pages, and hosted crawl4ai extraction.
 
 ## Overview
 
@@ -31,10 +32,16 @@ All adapters implement the same `SpiderAdapter` interface and return a standardi
 - **Link Extraction**: All adapters extract absolute links with consistent metadata
 - **Download Capture**: Browser-backed adapters expose downloads as `page.downloads`
 - **Optional Stealth Runtime**: CloakBrowser can be used as an opt-in external runtime; it is never bundled or enabled by default
-- **Error Handling**: Comprehensive error types (`ValidationError`, `NetworkError`)
+- **Error Handling**: Standardized `ValidationError` and `NetworkError` failures from `@happyvertical/utils`
 - **TypeScript Support**: Full type definitions for all APIs
 
 ## Installation
+
+Requirements:
+
+- Node.js 24 or newer
+- ESM runtime support
+- `@happyvertical/spider` and its `@happyvertical/*` dependencies published to an npm registry your package manager can read
 
 ```bash
 # Install with pnpm (recommended)
@@ -47,6 +54,13 @@ npm install @happyvertical/spider
 bun add @happyvertical/spider
 ```
 
+Browser-backed adapters use Playwright through Crawlee. If your package manager
+does not install Playwright browsers automatically, install Chromium once:
+
+```bash
+pnpm exec playwright install chromium
+```
+
 Optional CloakBrowser support is external. Install it only in environments where you choose to enable `stealth: true` and where you are responsible for the binary/license posture:
 
 ```bash
@@ -55,13 +69,34 @@ pnpm add cloakbrowser playwright-core
 
 ## Quick Start
 
+Use `scrapeIndex` when you want links from a page:
+
+```typescript
+import { scrapeIndex } from '@happyvertical/spider';
+
+const result = await scrapeIndex('https://example.com/documents');
+
+console.log(result.url);
+console.log(result.links.map((link) => link.href));
+```
+
+Use `scrapeDocument` when you want extracted document/page text:
+
+```typescript
+import { scrapeDocument } from '@happyvertical/spider';
+
+const document = await scrapeDocument('https://example.com/article');
+
+console.log(document.text);
+console.log(document.metadata.title);
+```
+
+Use `getSpider` when you need direct adapter control:
+
 ```typescript
 import { getSpider } from '@happyvertical/spider';
 
-// Create a spider adapter
 const spider = await getSpider({ adapter: 'simple' });
-
-// Fetch a page
 const page = await spider.fetch('https://example.com');
 
 console.log(page.url);      // Final URL after redirects
@@ -151,6 +186,28 @@ const page = await spider.fetch('https://example.com/dynamic', {
 - Handles `[aria-expanded="false"]`, `.accordion-*`, `<summary>`, etc.
 - Runs up to 3 expansion iterations to discover hidden content
 
+### Crawl4ai Adapter (Hosted Browser Extraction)
+
+Best when a remote crawl4ai service should handle browser work and return
+AI-friendly markdown alongside HTML.
+
+```typescript
+const spider = await getSpider({
+  adapter: 'crawl4ai',
+  baseUrl: 'http://localhost:11235',
+  waitUntil: 'networkidle',
+});
+
+const page = await spider.fetch('https://example.com/article', {
+  timeout: 60000,
+  cache: true,
+});
+
+console.log(page.markdown);
+```
+
+Set `HAVE_SPIDER_CRAWL4AI_URL` to choose the server URL from the environment.
+
 ### Optional CloakBrowser Runtime
 
 CloakBrowser is an explicit opt-in runtime provider for browser-backed paths. `@happyvertical/spider` does not bundle, install, predownload, or enable CloakBrowser by default.
@@ -190,6 +247,25 @@ const spider = await getSpider({
 
 ## API Reference
 
+### Convenience Functions
+
+#### `scrapeIndex(url, options?): Promise<ScrapeResult>`
+
+Scrapes an index/listing page for links. By default it uses the `basic` scraper
+with the `simple` spider adapter.
+
+#### `scrapeDocument(url, options?): Promise<DocumentResult>`
+
+Scrapes an HTML page or document landing page and extracts text, metadata, file
+download fields, and document-detection metadata. It supports `basic` and
+`tree` scraper strategies.
+
+#### `findDocumentLinks(url, options?): Promise<string[]>`
+
+Scrapes an index page and returns unique URLs that look like documents, including
+PDFs, common office formats, CivicWeb, DocuShare, and WordPress Download Manager
+links.
+
 ### Factory Function
 
 #### `getSpider(options: SpiderAdapterOptions): Promise<SpiderAdapter>`
@@ -197,12 +273,15 @@ const spider = await getSpider({
 Creates a spider adapter instance based on the provided options.
 
 **Parameters:**
-- `options`: Configuration object with discriminated union type
+  - `options`: Configuration object with discriminated union type
   - `adapter`: `'simple' | 'dom' | 'crawlee' | 'crawl4ai'` (required)
   - `cacheDir`: Custom cache directory (optional, default: `.cache/spider`)
-  - `headless`: Browser headless mode - Crawlee only (optional, default: `true`)
-  - `userAgent`: Custom user agent - Crawlee only (optional)
+  - `cacheProvider`: Cache provider config for file or S3 cache (optional)
+  - `headless`: Browser headless mode - Crawlee and Crawl4ai (optional, default: `true`)
+  - `userAgent`: Custom user agent - Crawlee and Crawl4ai (optional)
   - `executablePath`: Browser executable path - Crawlee only (optional; falls back to `HAVE_SPIDER_BROWSER_EXECUTABLE_PATH` or `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH`)
+  - `baseUrl`: Crawl4ai server URL - Crawl4ai only (optional; falls back to `HAVE_SPIDER_CRAWL4AI_URL` or `http://localhost:11235`)
+  - `waitUntil`: Crawl4ai wait strategy - Crawl4ai only (optional, default: `networkidle`)
   - `stealth`: Enable optional CloakBrowser runtime - Crawlee only (optional, default: `false`)
   - `cloak`: CloakBrowser runtime settings - Crawlee only (optional)
 
@@ -273,6 +352,12 @@ await spider.fetch(url, {
 | `HAVE_SPIDER_TIMEOUT` | number | 30000 | Request timeout in milliseconds |
 | `HAVE_SPIDER_USER_AGENT` | string | (see below) | Custom user agent string |
 | `HAVE_SPIDER_MAX_REQUESTS` | number | unlimited | Maximum number of requests |
+| `HAVE_SPIDER_CRAWL4AI_URL` | string | `http://localhost:11235` | Crawl4ai server URL |
+| `HAVE_SPIDER_BROWSER_EXECUTABLE_PATH` | string | unset | Chromium executable for Crawlee-backed paths |
+| `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH` | string | unset | Playwright-compatible Chromium executable fallback |
+| `CLOAKBROWSER_BINARY_PATH` | string | unset | Optional CloakBrowser binary path |
+| `CLOAKBROWSER_CACHE_DIR` | string | CloakBrowser default | Optional CloakBrowser cache directory |
+| `CLOAKBROWSER_AUTO_UPDATE` | boolean-ish | CloakBrowser default | Set to `false` to disable CloakBrowser auto-update checks |
 
 **Default User Agent** (when not set):
 ```
@@ -285,7 +370,7 @@ All adapters return a standardized `Page` object:
 
 ```typescript
 interface Page {
-  url: string;              // Final URL after redirects
+  url: string;              // Final or requested URL, depending on adapter
   content: string;          // Full HTML content
   links: Link[];            // Extracted absolute links with metadata
   raw: any;                 // Adapter-specific raw response data
@@ -413,7 +498,8 @@ pages.forEach(page => {
 The package uses standardized error types from `@happyvertical/utils`:
 
 ```typescript
-import { getSpider, ValidationError, NetworkError } from '@happyvertical/spider';
+import { getSpider } from '@happyvertical/spider';
+import { NetworkError, ValidationError } from '@happyvertical/utils';
 
 const spider = await getSpider({ adapter: 'simple' });
 
@@ -449,9 +535,10 @@ Based on real-world testing (Bentley town council website):
 
 ### Caching Strategy
 
-All adapters use `@happyvertical/cache` with file-based storage:
+All adapters use `@happyvertical/cache` with file-based storage by default and
+optional S3-backed cache configuration:
 
-- **Cache Keys**: Prefixed by adapter type (`simple:`, `dom:`, `crawlee:`)
+- **Cache Keys**: Prefixed by adapter type (`simple:`, `dom:`, `crawlee:`, `crawl4ai:`)
 - **Default Expiry**: 5 minutes (300,000ms)
 - **Storage**: Structured cache files via `@happyvertical/cache`
 - **Bypass**: Set `cache: false` in fetch options
@@ -474,7 +561,7 @@ All adapters use `@happyvertical/cache` with file-based storage:
 `scrapeDocument` supports only two scraper strategies: `basic` and `tree`.
 
 ```typescript
-import { scrapeDocument } from '@happyvertical/spider';
+import { findDocumentLinks, scrapeDocument } from '@happyvertical/spider';
 
 // Default: basic scraper with the DOM spider
 await scrapeDocument('https://example.com/article');
@@ -489,6 +576,8 @@ await scrapeDocument('https://example.com/dynamic-page', {
 await scrapeDocument('https://example.com/meetings', {
   scraper: 'tree',
 });
+
+const documentLinks = await findDocumentLinks('https://example.com/meetings');
 ```
 
 `scraper: 'crawlee'` is not a valid `scrapeDocument` option. Use `scraper: 'basic', spider: 'crawlee'` for a browser-backed fetch, or `scraper: 'tree'` for browser interaction.
@@ -622,7 +711,7 @@ one misbehaving adapter never aborts detection. Consumers keep their own
 (persisted) source model and map it to the minimal `AdapterSource`
 (`{ url, type?, config? }`) at the boundary.
 
-## Integration with Other @have Packages
+## Integration with Other @happyvertical Packages
 
 The spider package integrates seamlessly with other SDK packages:
 
@@ -691,13 +780,14 @@ await contents.mirror({
 });
 ```
 
-## Migration from v1.x
+## Migration from Earlier APIs
 
-The v2.0 refactoring introduces **breaking changes** to align with the provider pattern used across the SDK.
+Earlier versions exposed lower-level page-source helpers. The current public API
+uses adapter factories and convenience scraping functions.
 
 ### Breaking Changes
 
-| Old API (v1.x) | New API (v2.0) | Notes |
+| Earlier API | Current API | Notes |
 |----------------|----------------|-------|
 | `fetchPageSource({ url, cheap: true })` | `getSpider({ adapter: 'simple' }).fetch(url)` | Simple HTTP |
 | `fetchPageSource({ url, cheap: false })` | `getSpider({ adapter: 'dom' }).fetch(url)` | DOM processing |
@@ -707,7 +797,7 @@ The v2.0 refactoring introduces **breaking changes** to align with the provider 
 
 ### Migration Examples
 
-**Before (v1.x):**
+**Before:**
 ```typescript
 import { fetchPageSource, parseIndexSource } from '@happyvertical/spider';
 
@@ -720,7 +810,7 @@ const html = await fetchPageSource({
 const links = await parseIndexSource(html);
 ```
 
-**After (v2.0):**
+**After:**
 ```typescript
 import { getSpider } from '@happyvertical/spider';
 
@@ -732,7 +822,7 @@ const page = await spider.fetch('https://example.com', {
 const links = page.links; // Already extracted
 ```
 
-**Before (v1.x - DOM processing):**
+**Before:**
 ```typescript
 const html = await fetchPageSource({
   url: 'https://example.com',
@@ -740,15 +830,14 @@ const html = await fetchPageSource({
 });
 ```
 
-**After (v2.0):**
+**After:**
 ```typescript
 const spider = await getSpider({ adapter: 'dom' });
 const page = await spider.fetch('https://example.com');
 ```
 
-**New in v2.0 (Crawlee adapter):**
+**Browser-backed adapter:**
 ```typescript
-// Not available in v1.x
 const spider = await getSpider({
   adapter: 'crawlee',
   headless: true,
@@ -776,8 +865,34 @@ const page = await spider.fetch('https://example.com');
 
 ### Development Dependencies
 
-- **@types/cheerio** - TypeScript types for cheerio
 - **vitest** - Testing framework
+- **vite** and **vite-plugin-dts** - ESM build and declaration generation
+- **biome** - Linting/formatting
+- **typedoc** - Generated API reference documentation
+
+## Development
+
+Common local checks:
+
+```bash
+# Lint, typecheck, and build
+pnpm lint
+pnpm typecheck
+pnpm build
+
+# Generate committed API reference docs under docs/api/
+pnpm docs:api
+
+# Verify generated API docs are current
+pnpm docs:api:check
+
+# Run the test suite with coverage thresholds
+pnpm test:coverage
+```
+
+The API reference in [docs/api/index.html](docs/api/index.html) is generated
+from public JSDoc. Keep public classes, functions, interfaces, and type aliases
+documented with comments that are useful to package consumers.
 
 ## Testing
 
@@ -785,16 +900,19 @@ The package includes comprehensive unit and integration tests:
 
 ```bash
 # Run all tests
-npm test
+pnpm test
+
+# Run tests with coverage thresholds
+pnpm test:coverage
 
 # Run tests in watch mode
-npm run test:watch
+pnpm test:watch
 
 # Run optional live integration tests
-RUN_OPTIONAL_TESTS=1 npm test
+RUN_OPTIONAL_TESTS=1 pnpm test
 
 # Run optional CloakBrowser tests
-RUN_CLOAKBROWSER_TESTS=1 npm test
+RUN_CLOAKBROWSER_TESTS=1 pnpm test
 ```
 
 **Integration Test Coverage:**
@@ -806,10 +924,10 @@ RUN_CLOAKBROWSER_TESTS=1 npm test
 
 ## License
 
-This package is part of the HAVE SDK and is licensed under the MIT License - see the [LICENSE](../../LICENSE) file for details.
+This package is licensed under the MIT License. See [LICENSE](LICENSE) for details.
 
 ## Support
 
-- **Issues**: [GitHub Issues](https://github.com/happyvertical/sdk/issues)
-- **Documentation**: [SDK Docs](../../docs/)
-- **Examples**: See `src/*.integration.test.ts` for real-world usage examples
+- **Issues**: [GitHub Issues](https://github.com/happyvertical/spider/issues)
+- **Documentation**: This README, [SPEC.md](SPEC.md), and [API reference](docs/api/index.html)
+- **Examples**: See `src/**/*.spec.ts`, `src/**/*.optional.test.ts`, and `testdata/`

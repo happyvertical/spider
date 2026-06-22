@@ -11,6 +11,7 @@ concurrency:
 
 permissions:
   contents: read
+  packages: read
   pull-requests: write
 
 jobs:
@@ -27,7 +28,7 @@ jobs:
       - name: Validate commit messages
         uses: wagoid/commitlint-github-action@b948419dd99f3fd78a6548d48f94e3df7f6bf3ed # v6
         with:
-          configFile: commitlint.config.js
+          configFile: commitlint.config.mjs
 
       - name: Determine version bump
         id: version
@@ -61,7 +62,7 @@ jobs:
             1. Tests run on main branch
             2. Package is built
             3. Version is bumped automatically
-            4. Package is published to GitHub Packages
+            4. Package is published to npm
             5. Git tag is created
 
             No manual intervention needed!`;

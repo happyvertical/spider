@@ -6,11 +6,6 @@ on:
   pull_request:
     branches: [main]
   workflow_call:
-    secrets:
-      HAVE_RELEASE_APP_ID:
-        required: false
-      HAVE_RELEASE_APP_PRIVATE_KEY:
-        required: false
 
 permissions:
   contents: read
@@ -25,15 +20,6 @@ jobs:
     timeout-minutes: 30
 
     steps:
-      - name: Generate GitHub App Token
-        id: app-token
-        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3
-        with:
-          app-id: ${{ secrets.HAVE_RELEASE_APP_ID }}
-          private-key: ${{ secrets.HAVE_RELEASE_APP_PRIVATE_KEY }}
-          owner: happyvertical
-        continue-on-error: true
-
       - name: Checkout repository
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
 
@@ -41,10 +27,16 @@ jobs:
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: '24'
-          registry-url: 'https://npm.pkg.github.com'
 
       - name: Setup pnpm
         uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6
+
+      - name: Configure GitHub Packages for internal dependencies
+        run: |
+          echo "@happyvertical:registry=https://npm.pkg.github.com" >> .npmrc
+          echo "//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}" >> .npmrc
+        env:
+          NODE_AUTH_TOKEN: ${{ github.token }}
 
       - name: Get pnpm store directory
         shell: bash
@@ -61,8 +53,6 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       # The arc-runner image bakes Chromium at /ms-playwright for a specific
       # Playwright build, so this repo pins Playwright to that build (see
@@ -82,5 +72,8 @@ jobs:
       - name: Lint
         run: pnpm lint
 
-      - name: Run tests
-        run: pnpm test
+      - name: Check API docs
+        run: pnpm docs:api:check
+
+      - name: Run tests with coverage
+        run: pnpm test:coverage

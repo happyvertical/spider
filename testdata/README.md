@@ -91,7 +91,7 @@ These fixtures are used in `scrapeDocument.test.ts` with real scraper instances 
 ```typescript
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { getScraper } from './shared/scraper-factory';
+import { getScraper } from '@happyvertical/spider';
 
 // Load fixture HTML
 const fixtureHtml = readFileSync(

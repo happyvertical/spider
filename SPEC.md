@@ -2,143 +2,261 @@
 
 ## Overview
 
-The Spider package provides a standardized interface for fetching and parsing web content. It abstracts the underlying fetching and parsing mechanisms, allowing consuming applications to use a consistent API for interacting with web pages.
+`@happyvertical/spider` fetches web pages, extracts links, and turns document-like
+pages into normalized results. It exposes high-level convenience functions for
+common scraping work and lower-level adapter factories for callers that need
+explicit control over the fetch mechanism.
 
-The primary goal is to fetch a web page, parse its content, and extract relevant information, such as links, text, or other data.
+The package is ESM-only and targets Node.js 24 or newer.
 
-## Core Concepts
+## Public Entry Points
 
-- **SpiderManager**: The main entry point and public interface of the package. It is initialized with a specific adapter and orchestrates the fetching and parsing of web content.
-- **Adapter**: An adapter that conforms to the `SpiderAdapter` interface. Each adapter is responsible for communicating with a specific backend service (e.g., a simple HTTP client, a headless browser) and transforming the response into a standardized `Page` format.
-- **Page**: A standardized data structure representing a web page. It contains detailed information like the URL, content, and extracted links.
-- **Caching**: The package will use `@happyvertical/cache` to cache responses, reducing redundant fetches and improving performance.
+### `scrapeIndex(url, options?)`
 
-## Data Models
-
-### Page
-
-This is the standardized object returned from any fetch operation.
+Scrapes an index/listing page and returns extracted links plus scrape metrics.
+It defaults to the `basic` scraper with the `simple` HTTP adapter.
 
 ```typescript
-interface Page {
-  // The final URL of the page after any redirects.
-  url: string;
+import { scrapeIndex } from '@happyvertical/spider';
 
-  // The full HTML content of the page.
-  content: string;
+const result = await scrapeIndex('https://example.com/documents', {
+  scraper: { scraper: 'basic', spider: 'dom' },
+  scrape: { cache: true, timeout: 30000 },
+});
 
-  // An array of absolute links extracted from the page with metadata.
-  links: Link[];
-
-  // Files downloaded during browser-backed navigation.
-  downloads?: DownloadInfo[];
-
-  // The original, raw response from the adapter.
-  // Useful for debugging or accessing adapter-specific data.
-  raw: any;
-}
+console.log(result.links);
 ```
 
-## Adapter Interface
+### `scrapeDocument(url, options?)`
 
-All adapters must implement this interface.
+Scrapes a document page or document landing page and returns text, HTML when
+available, download fields when a browser-triggered download occurs, and
+document-detection metadata.
+
+Supported document scraper strategies are `basic` and `tree`.
 
 ```typescript
-interface SpiderAdapter {
-  /**
-   * Fetches a web page and returns a standardized Page object.
-   * @param url The URL of the page to fetch.
-   * @param options Optional configuration for the fetch operation.
-   * @returns A promise that resolves to a Page object.
-   */
-  fetch(url: string, options?: FetchOptions): Promise<Page>;
-}
+import { scrapeDocument } from '@happyvertical/spider';
 
-interface FetchOptions {
-  // Custom headers to include in the request.
-  headers?: Record<string, string>;
+const doc = await scrapeDocument('https://example.com/article');
 
-  // Request timeout in milliseconds.
-  timeout?: number;
-
-  // Whether to use the cache.
-  cache?: boolean;
-
-  // Cache expiry time in milliseconds.
-  cacheExpiry?: number;
-}
+console.log(doc.text);
+console.log(doc.metadata.title);
 ```
 
-## Public API
+### `findDocumentLinks(url, options?)`
 
-The primary way to interact with this package is through the `getSpider` factory function.
+Scrapes an index page and returns unique document-like URLs. It detects common
+file extensions plus WordPress Download Manager, CivicWeb, and DocuShare URL
+patterns.
+
+```typescript
+import { findDocumentLinks } from '@happyvertical/spider';
+
+const links = await findDocumentLinks('https://example.com/meetings');
+```
 
 ### `getSpider(options)`
 
-This function returns a standardized Spider Adapter that conforms to the `SpiderAdapter` interface, based on the provided options.
-
-```typescript
-// The interface of the returned adapter.
-interface SpiderAdapter {
-  fetch(url: string, options?: FetchOptions): Promise<Page>;
-}
-
-// Configuration options for the factory function.
-// This allows for selecting and configuring the desired adapter.
-type SpiderAdapterOptions =
-  | {
-      adapter: 'simple';
-      // No specific options for the simple adapter
-    }
-  | {
-      adapter: 'dom';
-      // No specific options for the dom adapter
-    }
-  | {
-      adapter: 'crawlee';
-      headless?: boolean;
-      userAgent?: string;
-      stealth?: boolean;
-      cloak?: {
-        humanize?: boolean;
-        executablePath?: string;
-        autoUpdate?: boolean;
-      };
-    }
-  | {
-      adapter: 'crawl4ai';
-      baseUrl?: string;
-    };
-
-function getSpider(options: SpiderAdapterOptions): SpiderAdapter;
-```
-
-### Example Usage
-
-This demonstrates how another package would use the `getSpider` factory.
+Creates a fetch adapter. This is the lower-level API for callers that need to
+choose the fetch/rendering mechanism directly.
 
 ```typescript
 import { getSpider } from '@happyvertical/spider';
 
-// The adapter is created by calling the factory with the desired adapter.
-const spider = getSpider({
-  adapter: 'crawlee',
+const spider = await getSpider({ adapter: 'simple' });
+const page = await spider.fetch('https://example.com');
+```
+
+### `getScraper(options)`
+
+Creates a scraper strategy directly. Runtime-supported strategies are `basic`
+and `tree`.
+
+```typescript
+import { getScraper } from '@happyvertical/spider';
+
+const scraper = await getScraper({
+  scraper: 'tree',
+  maxIterations: 20,
 });
 
-async function crawlAndLogLinks(url: string) {
-  try {
-    const page = await spider.fetch(url, { cache: true, cacheExpiry: 300000 });
-
-    console.log(`Fetched page: ${page.url}`);
-    console.log('Found links:', page.links);
-
-  } catch (error) {
-    console.error('Failed to fetch page:', error);
-  }
-}
-
-crawlAndLogLinks('https://example.com');
+const result = await scraper.scrape('https://example.com/meetings');
 ```
+
+### `@happyvertical/spider/platform`
+
+Exports a domain-agnostic platform adapter engine:
+
+- `AdapterRegistry`
+- `createAdapterContext`
+- `filterLinks`
+- platform adapter and detection types
+
+Use this subpath when building domain crawlers that detect a platform behind a
+URL and normalize items such as job postings or meeting documents.
+
+## Data Models
+
+### `Page`
+
+Returned by spider adapters.
+
+```typescript
+interface Page {
+  url: string;
+  content: string;
+  links: Link[];
+  raw: unknown;
+  markdown?: string;
+  downloads?: DownloadInfo[];
+}
+```
+
+`markdown` is provided by adapters that can return markdown, currently the
+`crawl4ai` adapter. `downloads` is populated by browser-backed paths when a URL
+triggers a file download instead of rendering a page.
+
+### `Link`
+
+```typescript
+interface Link {
+  href: string;
+  text: string;
+  title?: string;
+  ariaLabel?: string;
+  rel?: string;
+  target?: string;
+  classes?: string[];
+}
+```
+
+### `DocumentResult`
+
+```typescript
+interface DocumentResult {
+  url: string;
+  type: string;
+  text: string;
+  html?: string;
+  isDownload?: boolean;
+  fileContent?: Uint8Array;
+  filename?: string;
+  contentType?: string;
+  metadata: {
+    title?: string;
+    description?: string;
+    isPdf: boolean;
+    complete: boolean;
+    strategy: string;
+  };
+}
+```
+
+## Adapters
+
+### `simple`
+
+Fast HTTP fetching with `undici` and link extraction with `cheerio`.
+
+```typescript
+await getSpider({
+  adapter: 'simple',
+  cacheDir: '.cache/spider',
+});
+```
+
+### `dom`
+
+HTTP fetching plus HTML normalization through `happy-dom`.
+
+```typescript
+await getSpider({
+  adapter: 'dom',
+  cacheDir: '.cache/spider',
+});
+```
+
+### `crawlee`
+
+Browser-backed fetching through Crawlee and Playwright. It can discover links
+hidden behind common accordion/tree controls and can capture browser-triggered
+downloads.
+
+```typescript
+await getSpider({
+  adapter: 'crawlee',
+  headless: true,
+  executablePath: '/usr/bin/chromium',
+});
+```
+
+### `crawl4ai`
+
+Remote crawl4ai server integration. It can return markdown in addition to HTML.
+
+```typescript
+await getSpider({
+  adapter: 'crawl4ai',
+  baseUrl: 'http://localhost:11235',
+  waitUntil: 'networkidle',
+});
+```
+
+## Caching
+
+All adapters can cache through `@happyvertical/cache`.
+
+```typescript
+type CacheProviderConfig =
+  | { provider: 'file' }
+  | {
+      provider: 's3';
+      bucket: string;
+      prefix?: string;
+      region?: string;
+    };
+```
+
+Cache keys include adapter-specific inputs such as URL, headers, user agent,
+browser executable path, and crawl4ai server URL so different fetch
+configurations do not collide.
+
+## Environment Variables
+
+The package reads `HAVE_SPIDER_*` variables through `@happyvertical/utils`.
+Explicit options take precedence over environment values.
+
+| Variable | Purpose |
+| --- | --- |
+| `HAVE_SPIDER_TIMEOUT` | Fetch timeout in milliseconds |
+| `HAVE_SPIDER_USER_AGENT` | Default user agent |
+| `HAVE_SPIDER_MAX_REQUESTS` | Maximum request count passed through fetch options |
+| `HAVE_SPIDER_CRAWL4AI_URL` | Crawl4ai server URL |
+| `HAVE_SPIDER_BROWSER_EXECUTABLE_PATH` | Chromium executable for Crawlee-backed paths |
+| `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH` | Playwright-compatible Chromium executable fallback |
+
+Optional CloakBrowser paths also honor `CLOAKBROWSER_BINARY_PATH`,
+`CLOAKBROWSER_CACHE_DIR`, and `CLOAKBROWSER_AUTO_UPDATE`.
+
+## Errors
+
+Adapters throw `ValidationError` for invalid inputs and `NetworkError` for HTTP,
+timeout, and connectivity failures. Both classes come from
+`@happyvertical/utils`.
+
+```typescript
+import { NetworkError, ValidationError } from '@happyvertical/utils';
+```
+
+## Non-Goals
+
+- The package does not automatically enforce `robots.txt`. Callers must decide
+  policy, rate limits, and authorization at the application boundary.
+- The package does not parse PDF text. It detects and captures document links or
+  downloads; pass the result to a document/PDF package for full extraction.
+- CloakBrowser is optional and external. Callers are responsible for installing
+  it and for any binary-license or site-authorization requirements.
 
 ## Dependencies
 
@@ -150,12 +268,6 @@ crawlAndLogLinks('https://example.com');
 - `playwright`
 - `undici`
 
-## Optional Peer Dependencies
+Optional peer dependency:
 
-- `cloakbrowser`: loaded dynamically only when `stealth: true` is set on a browser-backed path. The package does not bundle or preinstall the CloakBrowser binary; callers are responsible for installation, binary-license compliance, and authorized/respectful scraping.
-
-## Future Work
-
-- **Robots.txt respect**: Add functionality to automatically fetch and respect `robots.txt` files.
-- **Additional Parsers**: Extend the `Page` object to include more parsed data, such as text content, metadata, or structured data (e.g., JSON-LD).
-- **Queueing System**: Integrate a queueing system (e.g., BullMQ) to manage and throttle crawl jobs.
+- `cloakbrowser`

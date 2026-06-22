@@ -13,9 +13,7 @@ import type {
  * a list of document links from an index page.
  *
  * @param url - The URL of the index page to scrape
- * @param options - Optional configuration
- * @param options.scraper - Scraper configuration (defaults to basic scraper with simple spider)
- * @param options.scrape - Scrape operation options (timeout, cache, headers, etc.)
+ * @param options - Optional scraper and fetch configuration
  * @returns Promise resolving to scrape results with links and metrics
  *
  * @example Basic usage

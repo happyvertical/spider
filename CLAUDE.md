@@ -222,7 +222,13 @@ interface Page {
 - Default timeout: 30 seconds (30,000ms) for local adapters, 60 seconds for crawl4ai
 - Links should be absolute URLs (relative URLs converted)
 - Handle errors with ValidationError and NetworkError from @happyvertical/utils
-- Respect robots.txt and use descriptive User-Agent strings
+- Callers should respect robots.txt and use descriptive User-Agent strings
+- Public API docs are generated with TypeDoc into `docs/api/`; run `pnpm docs:api`
+  after changing exported classes, functions, interfaces, or type aliases
+- `pnpm docs:api:check` must stay clean in CI; TypeDoc warnings are treated as
+  errors and public API exports should have consumer-facing JSDoc
+- `pnpm test:coverage` gates Vitest V8 coverage at 80% statements, 65% branches,
+  80% functions, and 80% lines
 
 ## Expert Agent Expertise
 
@@ -252,7 +258,7 @@ const page = await spider.fetch(
   { timeout: 60000, cache: true }
 );
 
-const pdfLinks = page.links.filter(link => link.endsWith('.pdf'));
+const pdfLinks = page.links.filter(link => link.href.endsWith('.pdf'));
 console.log(`Found ${pdfLinks.length} PDFs`);
 
 // Fallback strategy for resilience
