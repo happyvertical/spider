@@ -785,11 +785,11 @@ packages:
     resolution: {integrity: sha512-bEMORlG0cqdjVyCEuU0cDQbORWX+kYCeo0kV1lbxF5bt4r7SID2l9bqsxJEM0zndaxpOUT7riCyIVEuqq/Ynxg==}
 
   '@happyvertical/cache@0.74.4':
-    resolution: {integrity: sha512-dirZEyQt7xlk5S6DDys0hRMDGNieSPT1RphvPAorrhzOAOFqWCNjwCgNmM4FxoXfEMzRbr/gbxA3xKeq8RRZQQ==}
+    resolution: {integrity: sha512-dirZEyQt7xlk5S6DDys0hRMDGNieSPT1RphvPAorrhzOAOFqWCNjwCgNmM4FxoXfEMzRbr/gbxA3xKeq8RRZQQ==, tarball: https://npm.pkg.github.com/download/@happyvertical/cache/0.74.4/7f9c308b8329347a66fbd0b7a1047a862a5b55fd}
     hasBin: true
 
   '@happyvertical/utils@0.74.4':
-    resolution: {integrity: sha512-FhLWBHhiHVvyOx2dghuwFH8pSZaIsKAhdYAAWM1WKaNxlCRqOzuOINOAbi5BxCM9KGQhw2YEbug38EWfv7DHjA==}
+    resolution: {integrity: sha512-FhLWBHhiHVvyOx2dghuwFH8pSZaIsKAhdYAAWM1WKaNxlCRqOzuOINOAbi5BxCM9KGQhw2YEbug38EWfv7DHjA==, tarball: https://npm.pkg.github.com/download/@happyvertical/utils/0.74.4/ced22f3058af0c58b12eeea9c798fd0366ee13e6}
     hasBin: true
 
   '@inquirer/external-editor@1.0.3':
