@@ -4,3 +4,6 @@ allowBuilds:
   '@biomejs/biome': true
   esbuild: true
   lefthook: true
+minimumReleaseAgeExclude:
+  - '@happyvertical/cache@0.74.8'
+  - '@happyvertical/utils@0.74.8'
