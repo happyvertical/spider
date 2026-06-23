@@ -1,5 +1,11 @@
 # @happyvertical/spider
 
+## 1.1.7
+
+### Patch Changes
+
+- 0216557: Publish the package to the public npm registry instead of GitHub Packages.
+
 ## 1.1.6
 
 ### Patch Changes
