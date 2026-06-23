@@ -34,7 +34,7 @@ importers:
         version: 8.5.0
     devDependencies:
       '@biomejs/biome':
-        specifier: 1.9.4
+        specifier: ^1.9.4
         version: 1.9.4
       '@changesets/cli':
         specifier: ^2.31.0
@@ -46,7 +46,7 @@ importers:
         specifier: ^21.0.2
         version: 21.0.2
       '@types/node':
-        specifier: 24.13.2
+        specifier: ^24.13.2
         version: 24.13.2
       '@vitest/coverage-v8':
         specifier: ^4.1.9
@@ -64,10 +64,10 @@ importers:
         specifier: ^6.0.3
         version: 6.0.3
       vite:
-        specifier: 8.0.16
+        specifier: ^8.0.16
         version: 8.0.16(@types/node@24.13.2)(esbuild@0.28.1)(jiti@2.6.1)(tsx@4.22.4)(yaml@2.9.0)
       vite-plugin-dts:
-        specifier: 5.0.2
+        specifier: ^5.0.2
         version: 5.0.2(@microsoft/api-extractor@7.55.2(@types/node@24.13.2))(esbuild@0.28.1)(rolldown@1.0.3)(rollup@4.53.3)(typescript@6.0.3)(vite@8.0.16(@types/node@24.13.2)(esbuild@0.28.1)(jiti@2.6.1)(tsx@4.22.4)(yaml@2.9.0))
       vitest:
         specifier: ^4.1.9
