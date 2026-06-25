@@ -1,5 +1,13 @@
 # @happyvertical/spider
 
+## 1.1.9
+
+### Patch Changes
+
+- ### Dependencies
+
+  - update actions/cache action to v6 (#93)
+
 ## 1.1.8
 
 ### Patch Changes
