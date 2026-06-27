@@ -1,5 +1,13 @@
 # @happyvertical/spider
 
+## 1.1.10
+
+### Patch Changes
+
+- ### Dependencies
+
+  - update actions/cache digest to 55cc834 (#94)
+
 ## 1.1.9
 
 ### Patch Changes
