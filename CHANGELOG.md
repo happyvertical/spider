@@ -1,5 +1,13 @@
 # @happyvertical/spider
 
+## 1.1.11
+
+### Patch Changes
+
+- ### Dependencies
+
+  - update pnpm to v11.10.0 (#95)
+
 ## 1.1.10
 
 ### Patch Changes
