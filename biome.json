@@ -1,12 +1,13 @@
 {
-  "$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.5.3/schema.json",
   "files": {
-    "include": [
-      "src/**/*.{js,ts,tsx,jsx}",
-      "test/**/*.{js,ts,tsx,jsx}",
-      "*.{js,ts,tsx,jsx}"
+    "includes": [
+      "**/src/**/*.{js,ts,tsx,jsx}",
+      "**/test/**/*.{js,ts,tsx,jsx}",
+      "**/*.{js,ts,tsx,jsx}",
+      "!**/coverage",
+      "!**/docs/api"
     ],
-    "ignore": ["coverage/**", "docs/api/**"],
     "ignoreUnknown": true
   },
   "vcs": {
@@ -23,7 +24,7 @@
   "linter": {
     "enabled": true,
     "rules": {
-      "recommended": true,
+      "preset": "recommended",
       "suspicious": {
         "noExplicitAny": "info",
         "noArrayIndexKey": "warn",
@@ -84,7 +85,7 @@
   },
   "overrides": [
     {
-      "include": [
+      "includes": [
         "**/*.test.ts",
         "**/*.test.tsx",
         "**/*.spec.ts",
@@ -110,7 +111,7 @@
       }
     },
     {
-      "include": [
+      "includes": [
         "**/vite.config.ts",
         "**/vitest.config.ts",
         "**/*.config.ts",
@@ -129,7 +130,7 @@
       }
     },
     {
-      "include": ["**/messages.ts", "**/messages/**/*.ts"],
+      "includes": ["**/messages.ts", "**/messages/**/*.ts"],
       "linter": {
         "rules": {
           "style": {
