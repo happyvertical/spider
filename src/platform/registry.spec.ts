@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
+import type { Page, ScrapeResult } from '../shared/types.js';
 import { AdapterRegistry } from './registry.js';
 import type { AdapterContext, PlatformAdapter } from './types.js';
-import type { Page, ScrapeResult } from '../shared/types.js';
 
 interface Item {
   id: string;
@@ -79,7 +79,11 @@ describe('AdapterRegistry', () => {
       adapter('greenhouse', {
         detectUrl: (url) =>
           url.includes('greenhouse.io')
-            ? { normalizedUrl: url, confidence: 'high', platformName: 'Greenhouse' }
+            ? {
+                normalizedUrl: url,
+                confidence: 'high',
+                platformName: 'Greenhouse',
+              }
             : null,
       }),
     );
@@ -117,7 +121,11 @@ describe('AdapterRegistry', () => {
       adapter('workday', {
         detectHtml: (html) =>
           html.includes('Workday')
-            ? { normalizedUrl: 'https://x', confidence: 'medium', platformName: 'Workday' }
+            ? {
+                normalizedUrl: 'https://x',
+                confidence: 'medium',
+                platformName: 'Workday',
+              }
             : null,
       }),
     );
@@ -156,9 +164,7 @@ describe('AdapterRegistry', () => {
       throw new Error('network');
     });
     registry.register(adapter('documents', { priority: 999 }));
-    registry.register(
-      adapter('needshtml', { detectHtml: () => null }),
-    );
+    registry.register(adapter('needshtml', { detectHtml: () => null }));
     const result = await registry.detect('https://x', ctx, {
       fallbackType: 'documents',
     });
@@ -229,7 +235,9 @@ describe('AdapterRegistry', () => {
       const registry = new AdapterRegistry<Item>();
       const ctx = makeContext();
       registry.register(
-        adapter('greenhouse', { fetch: async () => [{ id: 'a' }, { id: 'b' }] }),
+        adapter('greenhouse', {
+          fetch: async () => [{ id: 'a' }, { id: 'b' }],
+        }),
       );
       const items = await registry.fetchItems(
         { url: 'https://x', type: 'greenhouse' },

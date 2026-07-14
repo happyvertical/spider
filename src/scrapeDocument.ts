@@ -1,4 +1,5 @@
 import { ValidationError } from '@happyvertical/utils';
+import { detectDocumentUrl } from './scrapeDocument/detectors';
 import { inferContentType, isPdfFile } from './shared/download-utils';
 import { getScraper } from './shared/scraper-factory';
 import type {
@@ -7,7 +8,6 @@ import type {
   ScrapeOptions,
   ScraperOptions,
 } from './shared/types';
-import { detectDocumentUrl } from './scrapeDocument/detectors';
 
 /**
  * Options for document scraping with scraper configuration.

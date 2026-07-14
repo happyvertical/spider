@@ -2,8 +2,8 @@
  * Tests for environment variable configuration in spider package
  */
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { getSpider } from './shared/factory';
 import { resolveBrowserExecutablePath } from './shared/browser-runner';
+import { getSpider } from './shared/factory';
 
 describe('Spider Environment Variable Configuration', () => {
   const originalEnv = process.env;

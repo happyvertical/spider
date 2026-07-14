@@ -6,7 +6,8 @@
  * source into normalized items (job postings, meetings, …); the registry detects
  * which adapter handles a URL (URL patterns first, then fetched HTML).
  */
-export * from './types.js';
-export * from './registry.js';
-export * from './link-filter.js';
+
 export * from './context.js';
+export * from './link-filter.js';
+export * from './registry.js';
+export * from './types.js';

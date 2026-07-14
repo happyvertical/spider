@@ -95,8 +95,7 @@ export class TreeScraper implements Scraper {
    * hidden links are revealed.
    */
   private getCacheKey(url: string, options?: ScrapeOptions): string {
-    const maxIterations =
-      this.options.maxIterations ?? DEFAULT_MAX_ITERATIONS;
+    const maxIterations = this.options.maxIterations ?? DEFAULT_MAX_ITERATIONS;
     const clickDelay = this.options.clickDelay ?? DEFAULT_CLICK_DELAY;
     const rateLimit = this.options.rateLimit ?? DEFAULT_RATE_LIMIT;
     const resolvedExecutablePath = resolveBrowserExecutablePath(

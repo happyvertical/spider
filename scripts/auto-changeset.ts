@@ -54,7 +54,10 @@ function getCommitsSinceLastRelease(): string[] {
   if (!commits) return [];
 
   // Split on null byte (not newline) to handle multi-line commit bodies
-  return commits.split('\x00').map((s) => s.trim()).filter(Boolean);
+  return commits
+    .split('\x00')
+    .map((s) => s.trim())
+    .filter(Boolean);
 }
 
 function parseConventionalCommit(commitLine: string): ParsedCommit | null {
@@ -103,9 +106,7 @@ function determineVersionBump(
 
   const hasFeature = commits.some((c) => c.type === 'feat');
   const hasFix = commits.some((c) => ['fix', 'perf'].includes(c.type));
-  const hasDeps = commits.some(
-    (c) => c.type === 'chore' && c.scope === 'deps',
-  );
+  const hasDeps = commits.some((c) => c.type === 'chore' && c.scope === 'deps');
 
   if (hasFeature || hasFix || hasDeps) return 'patch';
 
@@ -119,9 +120,7 @@ function generateChangesetContent(
   const features = commits.filter((c) => c.type === 'feat');
   const fixes = commits.filter((c) => c.type === 'fix');
   const breaking = commits.filter((c) => c.breaking);
-  const deps = commits.filter(
-    (c) => c.type === 'chore' && c.scope === 'deps',
-  );
+  const deps = commits.filter((c) => c.type === 'chore' && c.scope === 'deps');
 
   let content = `---\n`;
   content += `"${PACKAGE_NAME}": ${bump}\n`;
