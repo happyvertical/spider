@@ -49,6 +49,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "biome check",
     "deps:public:check": "node scripts/check-public-dependencies.mjs",
+    "browser:runtime:check": "node scripts/check-playwright-runtime.mjs",
     "docs:api": "typedoc",
     "docs:api:check": "pnpm docs:api && git diff --exit-code -- docs/api && test -z \"$(git ls-files --others --exclude-standard -- docs/api)\"",
     "format": "biome format --write src/",
@@ -61,16 +62,16 @@
     "prepare": "lefthook install"
   },
   "dependencies": {
-    "@happyvertical/cache": "^0.74.8",
-    "@happyvertical/utils": "^0.74.8",
+    "@happyvertical/cache": "^0.80.0",
+    "@happyvertical/utils": "^0.80.0",
     "cheerio": "^1.2.0",
     "crawlee": "^3.17.0",
     "happy-dom": "^20.10.6",
-    "playwright": "~1.61.0",
-    "undici": "^8.5.0"
+    "playwright": "~1.61.1",
+    "undici": "^8.7.0"
   },
   "peerDependencies": {
-    "cloakbrowser": "^0.4.0"
+    "cloakbrowser": "^0.4.10"
   },
   "peerDependenciesMeta": {
     "cloakbrowser": {
@@ -78,18 +79,18 @@
     }
   },
   "devDependencies": {
-    "@biomejs/biome": "2.5.3",
-    "@changesets/cli": "^2.31.0",
-    "@commitlint/cli": "^21.0.2",
-    "@commitlint/config-conventional": "^21.0.2",
-    "@types/node": "^24.13.2",
+    "@biomejs/biome": "2.5.4",
+    "@changesets/cli": "^2.31.1",
+    "@commitlint/cli": "^21.2.1",
+    "@commitlint/config-conventional": "^21.2.0",
+    "@types/node": "^24.13.3",
     "@vitest/coverage-v8": "4.1.10",
     "lefthook": "2.1.10",
-    "tsx": "^4.22.4",
-    "typedoc": "^0.28.19",
+    "tsx": "^4.23.1",
+    "typedoc": "^0.28.20",
     "typescript": "5.9.3",
     "vite": "8.1.4",
-    "vite-plugin-dts": "^5.0.2",
+    "vite-plugin-dts": "^5.0.3",
     "vitest": "4.1.10"
   }
 }
