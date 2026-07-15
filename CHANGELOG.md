@@ -1,5 +1,11 @@
 # @happyvertical/spider
 
+## 1.1.13
+
+### Patch Changes
+
+- 2719dfb: Align the package with HappyVertical SDK 0.80.0 and Playwright 1.61.1, and verify the exact prebaked Chromium runtime without downloading browsers in CI.
+
 ## 1.1.12
 
 ### Patch Changes
