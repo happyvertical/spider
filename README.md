@@ -54,8 +54,8 @@ npm install @happyvertical/spider
 bun add @happyvertical/spider
 ```
 
-Browser-backed adapters use Playwright through Crawlee. If your package manager
-does not install Playwright browsers automatically, install Chromium once:
+Browser-backed adapters use Playwright through Crawlee. Install the Chromium
+revision matched to your installed Playwright version once:
 
 ```bash
 pnpm exec playwright install chromium
@@ -244,6 +244,14 @@ const spider = await getSpider({
   executablePath: '/usr/bin/chromium',
 });
 ```
+
+Prebaked Playwright images must contain the exact browser revision required by
+the installed Playwright package. Spider CI pins Playwright 1.61.1 to Chromium
+and Chromium headless-shell revision 1228 under `/ms-playwright`, sets
+`PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1`, and runs `pnpm browser:runtime:check`
+before the crawl tests. This makes a stale image fail without downloading an
+unexpected browser build. The baked ARC runtime is owned by
+[`happyvertical/iac#1000`](https://github.com/happyvertical/iac/issues/1000).
 
 ## API Reference
 

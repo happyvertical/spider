@@ -14,6 +14,11 @@ jobs:
   test:
     name: Run Tests
     runs-on: arc-happyvertical
+    env:
+      EXPECTED_PLAYWRIGHT_CHROMIUM_REVISION: '1228'
+      EXPECTED_PLAYWRIGHT_VERSION: '1.61.1'
+      PLAYWRIGHT_BROWSERS_PATH: /ms-playwright
+      PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
     # Backstop so a stalled step (e.g. a hung browser download) fails fast
     # instead of sitting until the 6h default.
     timeout-minutes: 30
@@ -46,14 +51,11 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
-      # The arc-runner image bakes Chromium at /ms-playwright for a specific
-      # Playwright build, so this repo pins Playwright to that build (see
-      # package.json) and the install is a no-op against the baked browser.
-      # Bounded so a version drift that forces a re-download fails fast and
-      # visibly rather than hanging. See happyvertical/iac#809.
-      - name: Install Playwright Chromium
-        timeout-minutes: 10
-        run: pnpm exec playwright install chromium
+      # The ARC image must already contain the exact browser revision required
+      # by package.json. Downloads stay disabled so image/package drift fails
+      # immediately instead of mutating the runner. See happyvertical/iac#1000.
+      - name: Verify baked Playwright runtime
+        run: pnpm browser:runtime:check
 
       - name: Build
         run: pnpm build

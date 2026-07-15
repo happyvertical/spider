@@ -5,5 +5,15 @@ allowBuilds:
   esbuild: true
   lefthook: true
 minimumReleaseAgeExclude:
-  - '@happyvertical/cache@0.74.8'
-  - '@happyvertical/utils@0.74.8'
+  - '@happyvertical/cache@0.80.0'
+  - '@happyvertical/utils@0.80.0'
+  - '@biomejs/biome@2.5.4'
+  - '@biomejs/cli-darwin-arm64@2.5.4'
+  - '@biomejs/cli-darwin-x64@2.5.4'
+  - '@biomejs/cli-linux-arm64-musl@2.5.4'
+  - '@biomejs/cli-linux-arm64@2.5.4'
+  - '@biomejs/cli-linux-x64-musl@2.5.4'
+  - '@biomejs/cli-linux-x64@2.5.4'
+  - '@biomejs/cli-win32-arm64@2.5.4'
+  - '@biomejs/cli-win32-x64@2.5.4'
+  - '@changesets/cli@2.31.1'
