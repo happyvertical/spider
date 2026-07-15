@@ -1,7 +1,10 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { startFixtureServer, type FixtureServer } from '../testdata/local-server';
+import {
+  type FixtureServer,
+  startFixtureServer,
+} from '../testdata/local-server';
 import { scrapeDocument } from './scrapeDocument';
 import {
   detectDocumentUrl,
@@ -82,7 +85,10 @@ describe('document detector registry', () => {
 
   it('returns null for ordinary pages', () => {
     expect(
-      detectDocumentUrl('https://example.com/article', fixture('normal-page.html')),
+      detectDocumentUrl(
+        'https://example.com/article',
+        fixture('normal-page.html'),
+      ),
     ).toBeNull();
   });
 });
@@ -99,9 +105,12 @@ describe('scrapeDocument', () => {
   });
 
   it('scrapes basic HTML with title and description', async () => {
-    const result = await scrapeDocument(server.url('/fixtures/page-with-title.html'), {
-      cache: false,
-    });
+    const result = await scrapeDocument(
+      server.url('/fixtures/page-with-title.html'),
+      {
+        cache: false,
+      },
+    );
 
     expect(result).toMatchObject({
       url: server.url('/fixtures/page-with-title.html'),

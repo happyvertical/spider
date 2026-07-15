@@ -1,6 +1,6 @@
+import { createHash } from 'node:crypto';
 import type { CacheAdapter } from '@happyvertical/cache';
 import { getCache } from '@happyvertical/cache';
-import { createHash } from 'node:crypto';
 import type { CacheProviderConfig } from './types';
 
 export class CacheManager {

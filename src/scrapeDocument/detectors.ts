@@ -5,7 +5,10 @@ export interface DocumentDetectorResult {
   strategy: string;
 }
 
-type DocumentDetector = (url: string, html: string) => DocumentDetectorResult | null;
+type DocumentDetector = (
+  url: string,
+  html: string,
+) => DocumentDetectorResult | null;
 
 function decodeHtmlEntities(value: string): string {
   return value
@@ -65,7 +68,9 @@ export function extractWordPressDownloadUrl(
     const pdfUrl = makeAbsoluteUrl(pdfLinkMatch[1], url);
 
     if (process.env.HAVE_DEBUG === 'true' || process.env.DEBUG === 'spider') {
-      console.log(`[spider] WordPress detection: Found direct PDF link: ${pdfUrl}`);
+      console.log(
+        `[spider] WordPress detection: Found direct PDF link: ${pdfUrl}`,
+      );
     }
 
     return pdfUrl;

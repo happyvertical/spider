@@ -1,5 +1,8 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { startFixtureServer, type FixtureServer } from '../../testdata/local-server';
+import {
+  type FixtureServer,
+  startFixtureServer,
+} from '../../testdata/local-server';
 import { getScraper } from '../shared/scraper-factory';
 
 describe('Scraper Factory', () => {
@@ -87,7 +90,9 @@ describe('scrapers', () => {
 
     expect(result.strategy.spider).toBe('dom');
     expect(result.content).toContain('<html');
-    expect(result.links.find((link) => link.href.endsWith('/relative'))).toEqual(
+    expect(
+      result.links.find((link) => link.href.endsWith('/relative')),
+    ).toEqual(
       expect.objectContaining({
         href: server.url('/relative'),
         title: 'Relative title',
@@ -232,14 +237,20 @@ describe('scrapers', () => {
       cacheDir,
     });
 
-    const defaultResult = await defaultScraper.scrape(server.url('/custom-tree'), {
-      cache: true,
-      cacheExpiry: 60000,
-    });
-    const customResult = await customScraper.scrape(server.url('/custom-tree'), {
-      cache: true,
-      cacheExpiry: 60000,
-    });
+    const defaultResult = await defaultScraper.scrape(
+      server.url('/custom-tree'),
+      {
+        cache: true,
+        cacheExpiry: 60000,
+      },
+    );
+    const customResult = await customScraper.scrape(
+      server.url('/custom-tree'),
+      {
+        cache: true,
+        cacheExpiry: 60000,
+      },
+    );
 
     expect(defaultResult.links).not.toContainEqual(
       expect.objectContaining({

@@ -1,6 +1,9 @@
 import { ValidationError } from '@happyvertical/utils';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { startFixtureServer, type FixtureServer } from '../testdata/local-server';
+import {
+  type FixtureServer,
+  startFixtureServer,
+} from '../testdata/local-server';
 import { getSpider } from './index';
 import type { SpiderAdapterOptions } from './shared/types';
 
@@ -65,39 +68,35 @@ describe('adapter parity', () => {
   }
 
   for (const adapter of ['simple', 'dom', 'crawlee', 'crawl4ai'] as const) {
-    it(
-      `${adapter} returns absolute links with consistent metadata`,
-      async () => {
-        const spider = await getSpider(optionsFor(adapter));
-        const page = await spider.fetch(server.url('/'), { cache: false });
+    it(`${adapter} returns absolute links with consistent metadata`, async () => {
+      const spider = await getSpider(optionsFor(adapter));
+      const page = await spider.fetch(server.url('/'), { cache: false });
 
-        expect(page.url).toContain(server.origin);
-        expect(Array.isArray(page.links)).toBe(true);
-        expect(page.links.length).toBeGreaterThan(0);
-        expect(page.links.every((link) => link.href.startsWith('http'))).toBe(
-          true,
-        );
+      expect(page.url).toContain(server.origin);
+      expect(Array.isArray(page.links)).toBe(true);
+      expect(page.links.length).toBeGreaterThan(0);
+      expect(page.links.every((link) => link.href.startsWith('http'))).toBe(
+        true,
+      );
 
-        const relativeLink = page.links.find((link) =>
-          link.href.endsWith('/relative'),
-        );
+      const relativeLink = page.links.find((link) =>
+        link.href.endsWith('/relative'),
+      );
+      expect(relativeLink).toMatchObject({
+        href: server.url('/relative'),
+        text: expect.any(String),
+      });
+
+      if (adapter !== 'crawl4ai') {
         expect(relativeLink).toMatchObject({
-          href: server.url('/relative'),
-          text: expect.any(String),
+          title: 'Relative title',
+          ariaLabel: 'Relative label',
+          rel: 'nofollow',
+          target: '_blank',
+          classes: ['primary', 'test'],
         });
-
-        if (adapter !== 'crawl4ai') {
-          expect(relativeLink).toMatchObject({
-            title: 'Relative title',
-            ariaLabel: 'Relative label',
-            rel: 'nofollow',
-            target: '_blank',
-            classes: ['primary', 'test'],
-          });
-        }
-      },
-      60000,
-    );
+      }
+    }, 60000);
 
     it(`${adapter} caches fetched pages`, async () => {
       const spider = await getSpider(optionsFor(adapter));
@@ -197,7 +196,9 @@ describe('adapter parity', () => {
       baseUrl: 'http://127.0.0.1:1',
     });
 
-    await expect(spider.fetch(server.url('/'), { cache: false })).rejects.toThrow(
+    await expect(
+      spider.fetch(server.url('/'), { cache: false }),
+    ).rejects.toThrow(
       /Cannot connect to crawl4ai server|Failed to fetch page via crawl4ai/,
     );
   });

@@ -12,8 +12,7 @@ const MIME_TYPES: Record<string, string> = {
   '.docx':
     'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
   '.xls': 'application/vnd.ms-excel',
-  '.xlsx':
-    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   '.ppt': 'application/vnd.ms-powerpoint',
   '.pptx':
     'application/vnd.openxmlformats-officedocument.presentationml.presentation',
@@ -78,9 +77,11 @@ export function isPdfFile(filename?: string): boolean {
  * @param download - The Playwright Download object
  * @returns Promise<DownloadInfo>
  */
-export async function handlePlaywrightDownload(
-  download: { url(): string; suggestedFilename(): string; path(): Promise<string | null> },
-): Promise<DownloadInfo> {
+export async function handlePlaywrightDownload(download: {
+  url(): string;
+  suggestedFilename(): string;
+  path(): Promise<string | null>;
+}): Promise<DownloadInfo> {
   try {
     const url = download.url();
     const filename = download.suggestedFilename();

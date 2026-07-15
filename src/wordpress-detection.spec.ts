@@ -1,5 +1,8 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { startFixtureServer, type FixtureServer } from '../testdata/local-server';
+import {
+  type FixtureServer,
+  startFixtureServer,
+} from '../testdata/local-server';
 import { scrapeDocument } from './scrapeDocument';
 
 describe('WordPress Download Manager detection (issue #449)', () => {

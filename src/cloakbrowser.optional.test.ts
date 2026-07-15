@@ -1,5 +1,8 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { startFixtureServer, type FixtureServer } from '../testdata/local-server';
+import {
+  type FixtureServer,
+  startFixtureServer,
+} from '../testdata/local-server';
 import { getSpider } from './index';
 
 describe.skipIf(process.env.RUN_CLOAKBROWSER_TESTS !== '1')(

@@ -115,7 +115,9 @@ export class SimpleAdapter implements SpiderAdapter {
       const finalUrl =
         (
           response.context as { history?: Array<URL | string> } | undefined
-        )?.history?.at(-1)?.toString() ?? url;
+        )?.history
+          ?.at(-1)
+          ?.toString() ?? url;
       const links = extractHtmlLinks(content, finalUrl);
 
       const page: Page = {

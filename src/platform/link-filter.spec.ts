@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { filterLinks } from './link-filter.js';
 import type { Link } from '../shared/types.js';
+import { filterLinks } from './link-filter.js';
 
 const link = (href: string, text = ''): Link => ({ href, text });
 
@@ -32,7 +32,10 @@ describe('filterLinks', () => {
       link('/q', 'Nope'),
     ];
     expect(
-      filterLinks(links, { urlContains: ['/jobs/'], textContains: ['posting'] }),
+      filterLinks(links, {
+        urlContains: ['/jobs/'],
+        textContains: ['posting'],
+      }),
     ).toEqual([link('/jobs/1', 'Role'), link('/p', 'View posting')]);
   });
 

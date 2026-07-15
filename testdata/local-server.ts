@@ -1,5 +1,9 @@
 import { readFile } from 'node:fs/promises';
-import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
+import {
+  createServer,
+  type IncomingMessage,
+  type ServerResponse,
+} from 'node:http';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -181,7 +185,12 @@ export async function startFixtureServer(): Promise<FixtureServer> {
           join(testdataDir, 'wordpress-pdf-link.html'),
           'utf-8',
         );
-        send(response, 200, { 'Content-Type': 'text/html; charset=utf-8' }, html);
+        send(
+          response,
+          200,
+          { 'Content-Type': 'text/html; charset=utf-8' },
+          html,
+        );
         return;
       }
 
@@ -190,7 +199,12 @@ export async function startFixtureServer(): Promise<FixtureServer> {
           join(testdataDir, 'civicweb-download.html'),
           'utf-8',
         );
-        send(response, 200, { 'Content-Type': 'text/html; charset=utf-8' }, html);
+        send(
+          response,
+          200,
+          { 'Content-Type': 'text/html; charset=utf-8' },
+          html,
+        );
         return;
       }
 
@@ -199,7 +213,12 @@ export async function startFixtureServer(): Promise<FixtureServer> {
           join(testdataDir, 'docushare-download.html'),
           'utf-8',
         );
-        send(response, 200, { 'Content-Type': 'text/html; charset=utf-8' }, html);
+        send(
+          response,
+          200,
+          { 'Content-Type': 'text/html; charset=utf-8' },
+          html,
+        );
         return;
       }
 
@@ -263,7 +282,12 @@ export async function startFixtureServer(): Promise<FixtureServer> {
       const fixtureName = htmlForFixture(pathname);
       if (fixtureName) {
         const html = await readFile(join(testdataDir, fixtureName), 'utf-8');
-        send(response, 200, { 'Content-Type': 'text/html; charset=utf-8' }, html);
+        send(
+          response,
+          200,
+          { 'Content-Type': 'text/html; charset=utf-8' },
+          html,
+        );
         return;
       }
 
