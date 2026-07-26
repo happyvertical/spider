@@ -17,8 +17,7 @@ jobs:
     env:
       EXPECTED_PLAYWRIGHT_CHROMIUM_REVISION: '1228'
       EXPECTED_PLAYWRIGHT_VERSION: '1.61.1'
-      PLAYWRIGHT_BROWSERS_PATH: /ms-playwright
-      PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+      PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/.cache/ms-playwright
     # Backstop so a stalled step (e.g. a hung browser download) fails fast
     # instead of sitting until the 6h default.
     timeout-minutes: 30
@@ -51,10 +50,13 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
-      # The ARC image must already contain the exact browser revision required
-      # by package.json. Downloads stay disabled so image/package drift fails
-      # immediately instead of mutating the runner. See happyvertical/iac#1000.
-      - name: Verify baked Playwright runtime
+      # Public pull requests run on GitHub-hosted capacity and cannot depend on
+      # the private ARC image. Playwright resolves the exact browser revision
+      # pinned by the lockfile before the existing runtime check verifies it.
+      - name: Install Playwright runtime
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Verify Playwright runtime
         run: pnpm browser:runtime:check
 
       - name: Build
