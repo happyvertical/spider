@@ -16,7 +16,7 @@ permissions:
 jobs:
   validate-commits:
     name: Validate Conventional Commits
-    runs-on: arc-happyvertical
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout PR branch

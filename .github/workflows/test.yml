@@ -13,7 +13,7 @@ permissions:
 jobs:
   test:
     name: Run Tests
-    runs-on: arc-happyvertical
+    runs-on: ubuntu-latest
     env:
       EXPECTED_PLAYWRIGHT_CHROMIUM_REVISION: '1228'
       EXPECTED_PLAYWRIGHT_VERSION: '1.61.1'
