@@ -8,9 +8,8 @@ export default defineConfig({
     testTimeout: 120000,
     hookTimeout: 60000,
     pool: 'forks',
-    forks: {
-      singleFork: true,
-    },
+    maxWorkers: 1,
+    fileParallelism: false,
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
