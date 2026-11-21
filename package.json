@@ -66,7 +66,7 @@
     "@happyvertical/utils": "^0.80.0",
     "cheerio": "^1.2.0",
     "crawlee": "^3.17.0",
-    "happy-dom": "^20.10.6",
+    "happy-dom": "^21.0.0",
     "playwright": "~1.61.1",
     "undici": "^8.7.0"
   },
